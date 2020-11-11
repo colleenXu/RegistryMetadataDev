@@ -1,0 +1,47 @@
+## this should work
+{
+  "api_type": "KP",
+  "team": [
+    "Service_Provider"
+  ]
+}
+
+## each of the items below should fail
+## only one of the items
+{
+  "team": [
+    "Service_Provider"
+  ]
+}
+
+## not in api_type enums
+{
+  "api_type": "KPd",
+  "team": [
+    "Service_Provider"
+  ]
+}
+
+## not in team enums
+{
+  "api_type": "KP",
+  "team": [
+    "Service_Providerd"
+  ]
+}
+
+## repeated items within teams
+{
+  "api_type": "KP",
+  "team": [
+    "Service_Provider",
+    "Service_Provider"
+  ]
+}
+
+## must have at least one element in team
+{
+  "api_type": "KP",
+  "team": [
+  ]
+}
