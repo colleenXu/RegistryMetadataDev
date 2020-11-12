@@ -3,44 +3,54 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "description": "x-translator is a JSON object describes API-level, Translator-specific information. It is an extension/additional property inside the OpenAPI Info Object",
-  "required": [
-    "api_type",
-    "team"
-  ],
   "properties": {
-    "api_type": {
-      "type": "string",
-      "enum": [
-        "KP",
-        "ARA",
-        "ARS",
-        "SRI_Service"
-      ]
-    },
-    "team": {
-      "type": "array",
-      "minItems": 1,
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "enum": [
-          "Service_Provider",
-          "Multiomics_Provider",
-          "Clinical_Data_Provider",
-          "Connections_Hypothesis_Provider",
-          "Molecular_Data_Provider",
-          "Text_Mining_Provider",
-          "Exposures_Provider",
-          "Genetics_Provider",
-          "Ranking_Agent",
-          "imProve_Agent",
-          "Unsecret_Agent",
-          "Explanatory_Agent",
-          "Expander_Agent",
-          "Exploring_Agent",
-          "Link_Brokers",
-          "Standards_Reference_Implementation_Team"
-        ]
+    "info": {
+      "type": "object",
+      "properties": {
+        "x-translator": {
+          "type": "object",
+          "required": [
+            "api_type",
+            "team"
+          ],
+          "properties": {
+            "api_type": {
+              "type": "string",
+              "enum": [
+                "KP",
+                "ARA",
+                "ARS",
+                "SRI_Service"
+              ]
+            },
+            "team": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "Service_Provider",
+                  "Multiomics_Provider",
+                  "Clinical_Data_Provider",
+                  "Connections_Hypothesis_Provider",
+                  "Molecular_Data_Provider",
+                  "Text_Mining_Provider",
+                  "Exposures_Provider",
+                  "Genetics_Provider",
+                  "Ranking_Agent",
+                  "imProve_Agent",
+                  "Unsecret_Agent",
+                  "Explanatory_Agent",
+                  "Expander_Agent",
+                  "Exploring_Agent",
+                  "Link_Brokers",
+                  "Standards_Reference_Implementation_Team"
+                ]
+              }
+            }
+          }
+        }
       }
     }
   }
