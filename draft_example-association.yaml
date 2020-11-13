@@ -1,0 +1,117 @@
+## example: within MyDisease.info yaml, disease -> gene using disgenet/lhgdn "source"
+components:
+  x-bte-kgs-associations:
+    disease-gene1_disgenet_lhgdn:
+      ## information used in the query setup and node type parsing    
+      supportBatch: true
+      inputSeparator: ','
+      parameters:
+        ## allow everything from this operation to be returned      
+        fields: disgenet.genes_related_to_disease
+      requestBody:
+        body:
+          ## NOT SURE IF THIS IS FORMATTED RIGHT: 
+          ##   changed to get associations only from lhgdn        
+          q: '{inputs[0]&source=lhgdn}'
+          scopes: 'mondo.xrefs.umls, disgenet.xrefs.umls'
+        header: application/x-www-form-urlencoded
+      inputs:
+        - id: UMLS
+          semantic: Disease
+      outputs:
+        - id: NCBIGene
+          semantic: Gene
+          ## replaced x-bte-response-mapping with this and 
+          ##   other mappings to response fields for publications and measure values          
+          mapped_response_field: disgenet.gene_related_to_disease.gene_id
+      predicate:
+        ## biolink maps to TRAPI/biolink-model predicate
+        ## id maps to TRAPI/biolink-model relation
+        ## biolink is required, id and label are optional, id must be a CURIE      
+        biolink: related_to
+        id: 'SIO:001403'
+        label: is_associated_with
+      nodes_conflated:
+        ## DisGeNET disease-gene relationships conflate diseases/phenotypes and genes/gene-products      
+        - original_type: Disease
+          conflated_type: PhenotypicFeature
+          where: DisGeNET
+        - original_type: Gene
+          conflated_type: GeneProduct
+          where: DisGeNET
+      ## WHERE the association comes from and HOW it was made                      
+      provenance:
+        - name: MyDisease.info API
+          knowledge_source_type: service
+          version: '2020-10-26T00:00:00.000Z'
+          method: ingest_consolidate
+        - name: DisGeNET
+          knowledge_source_type: knowledgebase
+          version: v7.0
+          method: NLP_LHGDN
+          method_info:
+            url:
+              - 'https://www.disgenet.org/dbinfo#section11'
+        - name: GeneRIF
+          knowledge_source_type: text
+          version: '2009-03-31T00:00:00.000Z'
+          knowledge_source_context:
+            taxon_specific:
+              - 'NCBITaxon:9606'
+      publications:
+        ## mapped to response field         
+        pmid: disgenet.genes_related_to_disease.pubmed
+      ## MEASURES/INFO ABOUT THE RELATIONSHIP        
+      numeric_measures_present: true
+      numeric_measures:
+        - name: GDAscore
+          standard_label: association_score
+          ## mapped to response field         
+          value: disgenet.genes_related_to_disease.score
+          range:
+            minExclusive: 0
+            maxInclusive: 1
+          numeric_direction_info:
+            larger: more_evidence
+          measure_info:
+            url:
+              - 'https://www.disgenet.org/dbinfo#section31'
+        - name: EI
+          standard_label: evidence_index
+          ## mapped to response field 
+          value: disgenet.genes_related_to_disease.EI
+          range:
+            minExclusive: 0
+            maxInclusive: 1
+          numeric_direction_info:
+            larger: more_consistent
+          measure_info:
+            url:
+              - 'https://www.disgenet.org/dbinfo#section36'
+        - name: DSI
+          standard_label: gene_specific_to_disease
+          ontology_term: 'SIO:001351'
+          ## mapped to response field 
+          value: disgenet.genes_related_to_disease.DSI
+          range:
+            minExclusive: 0
+            maxInclusive: 1
+          numeric_direction_info:
+            larger: more_specific
+          measure_info:
+            url:
+              - 'https://www.disgenet.org/dbinfo#section33'
+        - name: DPI
+          standard_label: gene_specific_to_disease_class
+          ontology_term: 'SIO:001352'
+          ## mapped to response field 
+          value: disgenet.genes_related_to_disease.DPI
+          range:
+            minExclusive: 0
+            maxInclusive: 1
+          numeric_direction_info:
+            smaller: more_specific
+          measure_info:
+            url:
+              - 'https://www.disgenet.org/dbinfo#section34'
+      category_measures_present: false
