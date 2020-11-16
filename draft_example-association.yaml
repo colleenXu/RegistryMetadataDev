@@ -10,9 +10,9 @@ components:
         fields: disgenet.genes_related_to_disease
       requestBody:
         body:
-          ## NOT SURE IF THIS IS FORMATTED RIGHT: 
-          ##   changed to get associations only from lhgdn        
-          q: '{inputs[0]&source=lhgdn}'
+          ## BELOW DOESN'T WORK
+          ## API MAY NEED CHANGES TO "FILTER"/"SEARCH" DOCUMENTS RETURNED AND SET SOURCE FIELD AS A SPECIFIC FIELD       
+          q: '{inputs[0]&source=LHGDN}'
           scopes: 'mondo.xrefs.umls, disgenet.xrefs.umls'
         header: application/x-www-form-urlencoded
       inputs:
@@ -43,7 +43,7 @@ components:
       provenance:
         - name: MyDisease.info API
           knowledge_source_type: service
-          version: '2020-10-26T00:00:00.000Z'
+          version: "2020-10-26"
           method: ingest_consolidate
         - name: DisGeNET
           knowledge_source_type: knowledgebase
@@ -54,7 +54,7 @@ components:
               - 'https://www.disgenet.org/dbinfo#section11'
         - name: GeneRIF
           knowledge_source_type: text
-          version: '2009-03-31T00:00:00.000Z'
+          version: "2009-03-31"
           knowledge_source_context:
             taxon_specific:
               - 'NCBITaxon:9606'

@@ -247,8 +247,9 @@ definitions:
           association_from_shared_annot (infer association since they are
           annotated to the same things), NLP_LHGDN, NLP_BeFree, ingest (just ETL
           it), propagate_from_phenotype, propagate_from_protein_variant,
-          propagate_from_orthology, NLP_Scigraph, NLP_Scibite,
-          extract_metabolite_to_protein_annot,extract_metabolite_to_disease_annot...
+          propagate_from_sequence_variant, propagate_from_orthology, NLP_Scigraph, 
+          NLP_Scibite, extract_metabolite_to_protein_annot,
+          extract_metabolite_to_disease_annot...
         type: string
       method_info:
         description: >-
