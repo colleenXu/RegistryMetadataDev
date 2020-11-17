@@ -1,7 +1,7 @@
 {
     "components": {
         "x-bte-kgs-associations": {
-            "disease-gene1_disgenet_lhgdn": {
+            "disease-gene1_disgenet-lhgdn": {
                 "supportBatch": true,
                 "inputSeparator": ",",
                 "parameters": {

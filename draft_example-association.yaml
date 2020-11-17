@@ -1,7 +1,7 @@
 ## example: within MyDisease.info yaml, disease -> gene using disgenet/lhgdn "source"
 components:
   x-bte-kgs-associations:
-    disease-gene1_disgenet_lhgdn:
+    disease-gene1_disgenet-lhgdn:
       ## information used in the query setup and node type parsing    
       supportBatch: true
       inputSeparator: ','
