@@ -19,7 +19,6 @@ properties:
           .:
             $ref: '#/definitions/x-bte-kgs-association'
 definitions:
-  type: object
   x-bte-kgs-association:
     type: object
     required:

@@ -19,7 +19,6 @@
         }
     },
     "definitions": {
-        "type": "object",
         "x-bte-kgs-association": {
             "type": "object",
             "required": [
