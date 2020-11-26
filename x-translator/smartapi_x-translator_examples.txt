@@ -4,7 +4,7 @@
     "x-translator": {
       "api_type": "KP",
       "team": [
-        "Service_Provider"
+        "Service Provider"
       ]
     }
   }
@@ -17,7 +17,7 @@
     "x-translator": {
       "apitype": "KP",
       "team": [
-        "Service_Provider"
+        "Service Provider"
       ]
     }
   }
@@ -29,7 +29,7 @@
     "x-translator": {
       "api_type": "KPd",
       "team": [
-        "Service_Provider"
+        "Service Provider"
       ]
     }
   }
@@ -41,7 +41,7 @@
     "x-translator": {
       "api_type": "KP",
       "team": [
-        "Service_Providerd"
+        "Service Providerd"
       ]
     }
   }
@@ -54,8 +54,8 @@
     "x-translator": {
       "api_type": "KP",
       "team": [
-        "Service_Provider",
-        "Service_Provider"
+        "Service Provider",
+        "Service Provider"
       ]
     }
   }

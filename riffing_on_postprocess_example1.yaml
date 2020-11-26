@@ -1,0 +1,364 @@
+  x-bte-kgs-associations:
+  ## DISEASE -> GENE ASSOCIATIONS 
+    disease-gene_disgenet:  
+      ## information used in the query setup and node type parsing    
+      supportBatch: true
+      inputSeparator: ','
+      parameters:
+        ## allow everything from this operation to be returned      
+        fields: disgenet.genes_related_to_disease
+      requestBody:          
+        body:
+          q: '{inputs[0]}'
+          scopes: 'mondo.xrefs.umls, disgenet.xrefs.umls'
+        header: application/x-www-form-urlencoded 
+      inputs:
+      - id: UMLS
+        semantic: Disease   
+      outputs:
+      - id: NCBIGene
+        semantic: Gene
+        ## replaced x-bte-response-mapping with this and 
+        ##   other mappings to response fields for publications and measure values          
+        mapped_response_field: disgenet.gene_related_to_disease.gene_id    
+      ## while the predicates are currently the same for all disease-gene associations
+      ##   this could differ by the source field in the future...
+      predicate:
+       "$ref": "#/components/x-bte-reusable-info/predicate_is-associated-with"
+      nodes_conflated:
+       "$ref": "#/components/x-bte-reusable-info/disgenet_dggd/nodes_conflated"
+      publications:
+        ## mapped to response field         
+        pmid: disgenet.genes_related_to_disease.pubmed
+      ## MEASURES/INFO ABOUT THE RELATIONSHIP        
+      numeric_measures_present: true
+      numeric_measures:
+       "$ref": "#/components/x-bte-reusable-info/disgenet_dggd/numeric_measures"
+      category_measures_present: false
+      ## keys within predicates/provenance/measures/context-relevance that
+      ##  require post-processing to retrieve go here
+      needs_post_processing:
+        ## this is the API response field we want to parse
+        "disgenet.genes_related_to_disease.source":
+          ## this maps the actual values of the API response to specific metadata
+          ## WHERE the association comes from and HOW it was made                     
+          LHGDN:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_NLP_LHGDN" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-LHGDN_origin"   
+            ## Python string-formatting-like
+            ## inside brackets: human-readable info on what info goes into that part of the url
+            ##                  first is whether multiple IDs can be put there or not
+            ##                  second is what kind of ID goes there
+            ##                  third is optional, what is the separator if first = multiple
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__LHGDN/"
+          BEFREE:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_NLP_BEFREE" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-BEFREE_origin"   
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__BEFREE/"            
+          HPO:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_propagate-phenotype" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-HPO_origin"  
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__HPO/"              
+          UNIPROT:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_propagate-protein-var" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-UNIPROT_origin"  
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__UNIPROT/"              
+          CGI:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_ingest" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-CGI_origin"  
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__CGI/"              
+          CLINVAR:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_propagate-seq-var" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-CLINVAR_origin"   
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__CLINVAR/"                
+          GWASCAT:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_propagate-seq-var" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-GWASCAT_origin"   
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__GWASCAT/"                
+          GWASDB:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_propagate-seq-var" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-GWASDB_origin"
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__GWASDB/"             
+          MGD:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_propagate-orthology" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-MGD_origin" 
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__MGD/"              
+          RGD:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_propagate-orthology" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-RGD_origin"    
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__RGD/"                
+          CTD_mouse:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_propagate-orthology" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-CTDmouse_origin" 
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__CTD_mouse/"                
+          CTD_rat:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_propagate-orthology" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-CTDrat_origin"   
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__CTD_rat/"              
+          CLINGEN:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_ingest" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-CLINGEN_origin"   
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__CLINGEN/"               
+          GENOMICS_ENGLAND:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_ingest" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-GENOMICS-ENG_origin" 
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__GENOMICS_ENGLAND/"               
+          CTD_human:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_ingest" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-CTDhuman_origin" 
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__CTD_human/"               
+          PSYGENET:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_ingest" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-PSYGENET_origin"
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__PSYGENET/"                 
+          ORPHANET:
+            provenance:
+            - "$ref": "#/components/x-bte-reusable-info/provenance/mydisease_ingest-consolidate"
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet_ingest" 
+            - "$ref": "#/components/x-bte-reusable-info/provenance/disgenet-ORPHANET_origin"
+            website_format: "https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/geneid__{one,gene_NCBIGene_id}-source__ORPHANET/"                 
+  ## put the edge info/metadata that will be reused for x-bte-kgs-associations
+  x-bte-reusable-info:
+     ## put here since it's used repeatedly                             
+    predicate_is-associated-with:
+      ## biolink maps to TRAPI/biolink-model predicate
+      ## id maps to TRAPI/biolink-model relation
+      ## biolink is required, id and label are optional, id must be a CURIE      
+      biolink: related_to
+      id: 'SIO:001403'
+      label: is_associated_with
+    ## PROVENANCE    
+    provenance:
+      mydisease_ingest-consolidate:
+        name: "MyDisease.info API"
+        knowledge_source_type: service
+        ## trying to get these dates parsed as simple strings
+        version: "2020-10-26"
+        method: ingest_consolidate  
+      mydisease_ingest:
+        name: "MyDisease.info API"
+        knowledge_source_type: service
+        ## trying to get these dates parsed as simple strings
+        version: "2020-10-26"
+        method: ingest            
+      disgenet_NLP_LHGDN:          
+        name: DisGeNET
+        knowledge_source_type: knowledgebase
+        version: v7.0
+        method: NLP_LHGDN
+        method_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section11'
+      disgenet-LHGDN_origin:                        
+        name: GeneRIF
+        knowledge_source_type: text
+        ## trying to get these dates parsed as simple strings          
+        version: "2009-03-31"
+        knowledge_source_context:
+          taxon_specific:
+          - 'NCBITaxon:9606'             
+      disgenet_NLP_BEFREE:          
+        name: DisGeNET
+        knowledge_source_type: knowledgebase
+        version: v7.0
+        method: NLP_BEFREE
+        method_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section11'
+      disgenet-BEFREE_origin:                        
+        name: MEDLINE_abstracts
+        knowledge_source_type: publications
+        ## trying to get these dates parsed as simple strings          
+        version: "1970-01_to_2019-12"
+      disgenet_propagate-phenotype:          
+        name: DisGeNET
+        knowledge_source_type: knowledgebase
+        version: v7.0
+        method: propagate_from_phenotype
+        method_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section11'      
+      disgenet-HPO_origin:                        
+        name: HPO_annotations
+        knowledge_source_type: knowledgebase  
+      disgenet_propagate-protein-var:          
+        name: DisGeNET
+        knowledge_source_type: knowledgebase
+        version: v7.0
+        method: propagate_from_protein_variant
+        method_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section11'       
+      disgenet-UNIPROT_origin:                        
+        name: UniProt
+        knowledge_source_type: knowledgebase   
+        knowledge_source_context:
+          taxon_specific:
+          - 'NCBITaxon:9606'    
+      disgenet_ingest:          
+        name: DisGeNET
+        knowledge_source_type: knowledgebase
+        version: v7.0
+        method: ingest   
+        method_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section11'   
+      disgenet-CGI_origin:                        
+        name: Cancer_Genome_Interpreter
+        knowledge_source_type: knowledgebase   
+      disgenet_propagate-seq-var:          
+        name: DisGeNET
+        knowledge_source_type: knowledgebase
+        version: v7.0
+        method: propagate_from_sequence_variant
+        method_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section11'   
+      disgenet-CLINVAR_origin:                        
+        name: ClinVar
+        knowledge_source_type: knowledgebase  
+      disgenet-GWASCAT_origin:                        
+        name: NHGRI_EBI_GWAS_CATALOG
+        knowledge_source_type: knowledgebase     
+      disgenet-GWASDB_origin:                        
+        name: GWASdb
+        knowledge_source_type: knowledgebase   
+      disgenet_propagate-orthology:          
+        name: DisGeNET
+        knowledge_source_type: knowledgebase
+        version: v7.0
+        method: propagate_from_orthology
+        method_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section11'   
+      disgenet-MGD_origin:                        
+        name: MGD
+        knowledge_source_type: knowledgebase   
+        knowledge_source_context:
+          taxon_specific:
+          - 'NCBITaxon:10090'   
+      disgenet-RGD_origin:                        
+        name: RGD
+        knowledge_source_type: knowledgebase    
+      disgenet-CTDmouse_origin:                        
+        name: CTD
+        knowledge_source_type: knowledgebase   
+        knowledge_source_context:
+          taxon_specific:
+          - 'NCBITaxon:10090'   
+      disgenet-CTDrat_origin:                        
+        name: CTD
+        knowledge_source_type: knowledgebase   
+        knowledge_source_context:
+          taxon_specific:
+          - 'NCBITaxon:10116'  
+      disgenet-CLINGEN_origin:                        
+        name: ClinGen
+        knowledge_source_type: knowledgebase   
+      disgenet-GENOMICS-ENG_origin:                        
+        name: Genomics_England_PanelApp
+        knowledge_source_type: knowledgebase   
+      disgenet-CTDhuman_origin:                        
+        name: CTD
+        knowledge_source_type: knowledgebase   
+        knowledge_source_context:
+          taxon_specific:
+          - 'NCBITaxon:9606'     
+      disgenet-PSYGENET_origin:                        
+        name: PsyGeNET
+        knowledge_source_type: knowledgebase    
+      disgenet-ORPHANET_origin:                        
+        name: Orphanet
+        knowledge_source_type: knowledgebase            
+    ## all disease-gene and gene-disease operations using disgenet will have these properties 
+    disgenet_dggd:  
+      nodes_conflated:
+      - original_type: Disease
+        conflated_type: PhenotypicFeature
+        where: DisGeNET
+      - original_type: Gene
+        conflated_type: GeneProduct
+        where: DisGeNET
+      numeric_measures:
+      - name: GDAscore
+        standard_label: association_score
+        ## mapped to response field         
+        value: disgenet.genes_related_to_disease.score
+        range:
+          minExclusive: 0
+          maxInclusive: 1
+        numeric_direction_info:
+          larger: more_evidence
+        measure_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section31'
+      - name: EI
+        standard_label: evidence_index
+        ## mapped to response field 
+        value: disgenet.genes_related_to_disease.EI
+        range:
+          minExclusive: 0
+          maxInclusive: 1
+        numeric_direction_info:
+          larger: more_consistent
+        measure_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section36'
+      - name: DSI
+        standard_label: gene_specific_to_disease
+        ontology_term: 'SIO:001351'
+        ## mapped to response field 
+        value: disgenet.genes_related_to_disease.DSI
+        range:
+          minExclusive: 0
+          maxInclusive: 1
+        numeric_direction_info:
+          larger: more_specific
+        measure_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section33'
+      - name: DPI
+        standard_label: gene_specific_to_disease_class
+        ontology_term: 'SIO:001352'
+        ## mapped to response field 
+        value: disgenet.genes_related_to_disease.DPI
+        range:
+          minExclusive: 0
+          maxInclusive: 1
+        numeric_direction_info:
+          smaller: more_specific
+        measure_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section34'            

@@ -1,0 +1,143 @@
+## example: biolink/monarch api yaml, disease -> phenotype operation 
+## based on https://raw.githubusercontent.com/NCATS-Tangerine/translator-api-registry/master/biolink/openapi.yml
+components:
+  x-bte-kgs-associations:
+    disease-gene1:
+      query_info:  
+        supportBatch: false
+        ## ?? using the python module to access the metaKG, I see a query_operation field, 
+        ##      which includes inputSeparator and stuff...include here as well?
+        parameters: 
+          direct: true
+          ## the direct parameter above means some queries don't return results (they inherit from other diseases) 
+          disease_id: '{inputs[0]}'
+          rows: 200
+          'unselect_evidence': true  ## this means the evidence_graph field isn't filled
+      inputs:  ## used by metaKG too
+        - id: MONDO
+          semantic: Disease
+      outputs:    ## used by metaKG and parsing response too 
+        - id: HP
+          semantic: PhenotypicFeature     
+          ## ?? changed from 'associations.object.HP'
+          takes_value_from_field: associations.object.id 
+      ## association/edge properties that are necessary and/or in the API response
+      ## not including all fields (some are always null...) 
+      edge_properties:
+        ## what the relationship is
+        biolink_predicate:
+          constant_value: has_phenotype  ## both relations below map to one biolink relation term right now
+        ## ?? hard to keep updated? 
+        ##    find the enum values for relation using https://api.monarchinitiative.org/api, relation/usage/between/disease/phenotype with disease as subject and phenotype as object
+        relation_id:
+          takes_value_from_field: "associations.relation.id"
+          expected_type: string
+          enum_values: 
+            ["RO:0002200", "RO:0004022"]        
+        relation_label:
+          takes_value_from_field: "associations.relation.label"
+          expected_type: string
+          enum_values: 
+            ["has phenotype", "disease has basis in feature"]
+        negated:  ## not sure how to use this...
+          takes_value_from_field: "associations.negated"
+          expected_type: boolean          
+        ## provenance that's required when possible
+        publications:  
+          takes_value_from_field: "associations.publications"  ## ?? changed from 'associations.publications.id'
+          ## ?? however, I think this is usually an empty array...so I'm not sure if the below format is correct
+          expected_format: 
+            description: "array of integer ids"
+            id_namespace: pmid
+        website_parsing:  ## ?? rename w/ prefix to show this is NOT a normal edge property    
+         template: "https://monarchinitiative.org/disease/{input_disease}#phenotype/" 
+         template_keys:
+           ## the MONDO Disease CURIEs used as input to the query, as an array of strings
+           input_disease: "inputs[0]"  
+         parsing_instructions: >-
+           make an edge property named websites. The value is an ARRAY of website urls, 
+           one for every element of input_disease 
+         code_example: ""  ## FOR SELF: make this           
+        ##  provenance-related fields in the response  ?? rename w/ prefix          
+        ## EXAMPLE OF SITUATION 3: INVOLVES POST-PROCESSING 
+        ## ?? I'm not sure if treating this as a mapping problem is best. Maybe 
+        ##    treating this as a parsing problem (where there's code or workflow lang
+        ##    descriptions of what to do is better? 
+        monarch_sources:  
+          maps_value_from_field: "associations.provided_by"
+          expected_format:  ## so ARA has to ITERATE over this when doing the value mapping
+            description: "array of strings"
+          value_mapping:  ## ?? this currently might be the only source for this operation...
+            "https://archive.monarchinitiative.org/#hpoa": "HPO_annotations"
+        ## measure-related fields in the response: category only...
+        ## ?? rename w/ prefix, add information currently in reasoning_support to here, 
+        ## ?? align info currently in reasoning_support with KMAttribute here? 
+        ##      https://github.com/NCATSTranslator/ReasonerAPI/pull/171/files    
+        ## ?? use enum_values? or is enum_values used only for stuff we want to querable on metaKG level...
+        monarch_frequency_id:
+          takes_value_from_field: "associations.frequency.id"
+          expected_type: string  ## ?? or null...how to show this?
+        monarch_frequency_label:
+          takes_value_from_field: "associations.frequency.label"
+          expected_type: string  ## ?? or null...how to show this?
+        monarch_onset_id:
+          takes_value_from_field: "associations.onset.id"
+          expected_type: string  ## ?? or null...how to show this?
+        monarch_onset_label:
+          takes_value_from_field: "associations.onset.label"
+          expected_type: string  ## ?? or null...how to show this?            
+        ## no context/relevance info
+      ## SEPARATE INFO FOR REASONING, 
+      ## always involves mapping response fields/field-values to more info 
+      reasoning_support:
+        nodes_conflated:
+        ## Monarch distinguishes diseases (MONDO ids) and phenotypes (HP ids) but those ontologies both conflate diseases/phenotypes... 
+        - original_type: Disease
+          conflated_type: PhenotypicFeature
+          where: "Monarch Initiative Biolink API"
+        - original_type: PhenotypicFeature
+          conflated_type: Disease
+          where: "Monarch Initiative Biolink API" 
+        measure_info:
+          measures_described: 
+          - monarch_frequency_id
+          - monarch_frequency_label
+          - monarch_onset_id
+          - monarch_onset_label
+          parsing_description: >-
+            post-processing can be done to map each response field (not the value, the field itself) to a 
+            category-measure-info model developed by CX. It provides information on what the measure value means
+            in the context of this association, including what a direction means if the categories are ordered, 
+            a list of category values, and where to go to find out how this measure was generated (like a website
+            or a publication). If possible, the measure is also mapped to an ontology term. 
+          info_file: ""  ## FOR SELF: make this           
+          provenance_info:   
+          ## if there is only one "source" (HPO annotations), I can just give the value 
+          ## I'm using https://api.monarchinitiative.org/api, metadata/datasets but it's hard to figure out 
+          ##   what it's saying or what's going on (download dates?) 
+            value:
+            - name: "Monarch Initiative Biolink API"
+              version: "2020-10"
+              version_type: "date_last_updated"  ## okay that this is year/month vs year/month/date? 
+              knowledge_source_type: knowledgebase
+              method: "ingest"
+              method_info:
+                url:
+                - 'https://monarchinitiative.org/about/data-sources'              
+            - name: HPO_annotations
+              version: unknown
+              version_type: unknown
+              knowledge_source_type: knowledgebase
+      metakg_support:
+        numeric_measures_present: false
+        category_measures_present: true
+        context-relevance_specific: false
+        knowledge_sources_involved:
+        ## list of the knowledge sources and some querable info. 
+        ##  For more, see the reasoning_support/provenance_information and its linkout file 
+        - name: "Monarch Initiative Biolink API"
+          version: "2020-10"
+          version_type: "date_last_updated"
+        - name: HPO_annotations
+          version: unknown
+          version_type: unknown  

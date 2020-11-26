@@ -1,0 +1,13 @@
+
+response_field: disgenet.genes_related_to_disease.source
+## field not used here: processing_response_field. used to explain what to do if this field has to be parsed (aka biolink api's source field with a string list..."
+## biolink api will likely have a weird provenance: a biolink api provenance like what is shown here for an entry
+## then another entry that says "multiple_sources", then gives the values and the link to learn more?
+## for monarch: https://monarchinitiative.org/about/data-sources  
+## also helpful for websites for association? https://monarchinitiative.org/help/linkout 
+mapping:
+  "LHGDN":
+   - "$ref": "#/reusable/mydisease_ingest-consolidate"
+   - "$ref": "#/reusable/disgenet_NLP_LHGDN" 
+   - "$ref": "#/reusable/disgenet-LHGDN_origin" 
+reusable:

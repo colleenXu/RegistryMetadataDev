@@ -1,0 +1,182 @@
+## example: MyDisease.info yaml, disease -> gene operation (which uses disgenet)
+components:
+  x-bte-kgs-associations:
+    disease-gene1:
+      query_info:  
+        supportBatch: true
+        inputSeparator: ','
+        parameters:
+          fields: disgenet.genes_related_to_disease
+        requestBody:
+          body:     
+            q: '{inputs[0]}'
+            scopes: 'mondo.xrefs.umls, disgenet.xrefs.umls'
+          header: application/x-www-form-urlencoded
+      inputs:  ## used by metaKG too
+        - id: UMLS
+          semantic: Disease
+      outputs:    ## used by metaKG and parsing response too 
+        - id: NCBIGene
+          semantic: Gene     
+          response_field: "$disgenet.gene_related_to_disease.gene_id"
+      ## association/edge properties that BTE looks for 
+      bte_standard_edge_properties:
+        ## what the relationship is
+        ## Examples of Situation 1: constant value / not tied to response
+        biolink_predicate: related_to  ## same as TRAPI/biolink predicate slot
+        relation_id: "SIO:001403"  ## same as TRAPI/biolink relation slot
+        relation_label: "SIO:is_associated_with"
+        nodes_conflated:
+        ## DisGeNET disease-gene relationships conflate diseases/phenotypes and genes/gene-products      
+        - original_type: Disease
+          conflated_type: PhenotypicFeature
+          where: DisGeNET
+        - original_type: Gene
+          conflated_type: GeneProduct
+          where: DisGeNET                 
+        ## where / when / how association was made ("EPC") 
+        ## Example of Situation 2: take on value of response field
+        ## try making this flatter 
+        publications_pmid: "$disgenet.genes_related_to_disease.pubmed"
+        ## Example of Situation 3ish: needing to process/transform/map from value in response field
+        postprocess_websites:     
+          template: "https://www.disgenet.org/browser/0/1/0/{input_disease}/geneid__{response_gene}-source__{response_source}/" 
+          template_keys:
+            response_source: "$disgenet.genes_related_to_disease.source"
+            response_gene: "$disgenet.genes_related_to_disease.gene_id"
+            ## the UMLS Disease IDs used as input to the query, as an array of strings
+            ## ?? how to describe this?
+            input_disease: "inputs[0]"  
+          postprocess_instructions: >-
+            make an edge property named websites. The value is an ARRAY of website urls, 
+            one for every element of input_disease 
+          postprocess_code: ""  ## FOR SELF: make this   
+        postprocess_provenance:
+          response_fields_used: 
+          - "$disgenet.genes_related_to_disease.source"
+          postprocess_instructions: >-
+            info_file gives a mapping from the possible value of the source field to a 
+            provenance model developed by CX describing what knowledge sources were involved and 
+            their methods of creating/aggregating the associations
+          postprocess_mapping_file: ""  ## FOR SELF: make this    
+          postprocess_code: ""  ## FOR SELF: make this   
+        ## no context/relevance info
+      ## association/edge properties in response that BTE ingests but doesn't necessarily use
+      operation_specific_edge_properties:  
+        ## so put some information describing what this is here?
+        disgenet_sourceKey: 
+          bte_type: "provenance-related"  
+          ## choices are "relationship_type", "provenance-related", "numeric_measure", "category_measure", "context-relevance", some kind of other (like "text_mining")
+          value: "$disgenet.genes_related_to_disease.source"
+        disgenet_yearFirstReported: 
+          bte_type: "provenance-related"
+          value: "$disgenet.genes_related_to_disease.YearInitial"
+        disgenet_yearLastReported: 
+          bte_type: "provenance-related"
+          value: "$disgenet.genes_related_to_disease.YearFinal"
+        disgenet_associationScore: 
+          bte_type: "numeric_measure"
+          value: "$disgenet.genes_related_to_disease.score"
+          range:
+            minExclusive: 0
+            maxInclusive: 1
+          numeric_direction_info:
+            larger: more_evidence
+          measure_websites:
+          - 'https://www.disgenet.org/dbinfo#section31'          
+        disgenet_evidenceIndex: 
+          bte_type: "numeric_measure"
+          value: "$disgenet.genes_related_to_disease.EI"
+          range:
+            minExclusive: 0
+            maxInclusive: 1
+          numeric_direction_info:
+            larger: more_consistent
+          measure_websites: 
+          - 'https://www.disgenet.org/dbinfo#section36'
+        disgenet_gene-DiseaseSpecificity: 
+          bte_type: "numeric_measure"
+          ontology_term: 'SIO:001351'
+          value: "$disgenet.genes_related_to_disease.DSI"
+          range:
+           minExclusive: 0
+           maxInclusive: 1
+          numeric_direction_info:
+            larger: more_specific
+          measure_websites: 
+          - 'https://www.disgenet.org/dbinfo#section33'          
+        disgenet_gene-DiseaseClassSpecificity: 
+          bte_type: "numeric_measure"
+          ontology_term: 'SIO:001352'
+          value: "$disgenet.genes_related_to_disease.DPI"
+          range:
+            minExclusive: 0
+            maxInclusive: 1
+          numeric_direction_info:
+            smaller: more_specific
+          measure_websites: 
+          - 'https://www.disgenet.org/dbinfo#section34'                
+      metakg_support:
+        numeric_measures_present: true
+        category_measures_present: false
+        context-relevance_specific: false
+        knowledge_sources_involved:
+        ## list of the knowledge sources and some querable info. 
+        ##  For more, see the reasoning_support/provenance_information and its linkout file 
+        - name: "MyDisease.info API"
+          version: "2020-10-26"
+          version_type: "date_last_updated"
+        - name: DisGeNET
+          version: "7.0"
+          version_type: "version_number"
+        - name: GeneRIF
+          ## trying to get these dates parsed as simple strings          
+          version: "2009-03-31"
+          version_type: "date_of_data"   
+          ## tag for specific subset used
+          specific_subset: human
+        - name: MEDLINE_abstracts
+          ## not sure how to describe this for parsing          
+          version: "1970-01_to_2019-12"
+          version_type: "date-range_in_year-month"
+        - name: HPO_annotations
+          version: unknown
+          version_type: unknown
+        - name: UniProt
+          version: unknown
+          version_type: unknown  
+          specific_subset: human
+        - name: Cancer_Genome_Interpreter
+          version: unknown
+          version_type: unknown
+        - name: ClinVar
+          version: unknown
+          version_type: unknown
+        - name: NHGRI-EBI_GWAS_Catalog
+          version: unknown
+          version_type: unknown
+        - name: GWASdb
+          version: unknown
+          version_type: unknown
+        - name: MGD
+          version: unknown
+          version_type: unknown
+        - name: RGD
+          version: unknown
+          version_type: unknown
+        - name: CTD
+          version: unknown
+          version_type: unknown
+          specific_subset: "human,mouse,rat"
+        - name: ClinGen
+          version: unknown
+          version_type: unknown          
+        - name: Genomics_England_PanelApp
+          version: unknown
+          version_type: unknown              
+        - name: PsyGeNET
+          version: unknown
+          version_type: unknown    
+        - name: Orphanet
+          version: unknown
+          version_type: unknown      

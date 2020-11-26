@@ -1,0 +1,598 @@
+## built from the JSON schema, with extra comments
+title: Objects that are elements of x-bte-kgs-operations
+$schema: 'http://json-schema.org/draft-04/schema#'
+type: object
+description: >-
+  Describes the format for one type of association/edge from a
+  knowledge-provider (KP) API in the Translator ecosystem. Each association is a
+  JSON Object and an element within x-bte-kgs-associations.
+  x-bte-kgs-associations is an extension inside the OpenAPI components Object. A
+  type of edge/association is considered a unique combination of input-type,
+  predicate, provenance-path, and output-type.
+properties:
+  components:
+    type: object
+    properties:
+      x-bte-kgs-associations:
+        type: object
+        patternProperties:
+          .:
+            $ref: '#/definitions/x-bte-kgs-association'
+definitions:
+  x-bte-kgs-association:
+    type: object
+    oneOf:
+    - $ref: '#/definitions/association_no-required-field-post-process'
+    ## post-processing for website-format can still happen here 
+    - $ref: '#/definitions/association_post-process-provenance'
+    ## special-post-processing here to assign provenance based on API response field  
+    ## maybe a situation needed for post-processing to get context/relevance for association...
+  association_post-process-provenance:    
+    required:
+      - supportBatch
+      - inputs
+      - outputs
+      - needs_post_processing
+      - predicate
+      - numeric_measures_present
+      - category_measures_present
+    properties:
+      ## information used in the query setup and node type parsing    
+      supportBatch:
+        type: boolean
+      inputSeparator:
+        description: >-
+          If this API supports multiple input IDs in one query, this is the
+          symbol that needs to be between IDs
+        type: string
+      inputs:
+        description: >-
+          Python-list-of-dictionaries-like, describes the identifier namespace
+          of the inputs for the query.
+        type: array
+        items:
+          $ref: '#/definitions/input_info'
+      outputs:
+        description: >-
+          Python-list-of-dictionaries-like, describes the identifier namespace
+          and the API/JSON response slots of the query's response.
+        type: array
+        items:
+          $ref: '#/definitions/output_info'
+      ## WHAT the relationship is                    
+      predicate:
+        type: object
+        required:
+          - biolink
+        properties:
+          biolink:
+            description: >-
+              Biolink relation that best describes the association. For
+              formatting, omit the biolink prefix and use underscores in place
+              of spaces in the string. Maps to the predicate field in a TRAPI
+              Edge.
+            type: string
+          id:
+            description: >-
+              Relation (OWL ObjectProperty, formatted like a CURIE as prefix:id)
+              that best describes the association. May be a closer description
+              of the true association or the original predicate in the data. For
+              formatting, (1) use the official ontology prefix or the prefix
+              mapped to a namespace in the Biolink Model in all-uppercase and
+              (2) use underscores in place of spaces. Maps to the relation field
+              in a TRAPI Edge.
+            type: string
+          label:
+            description: >-
+              human-readable label for id to help with human interpretation of
+              the association
+            type: string
+      nodes_conflated:
+        description: >-
+          Python-list-of-dictionaries-like, used when the association involves
+          conflating the Biolink entity classes/types of the connected nodes.
+          For example, a gene-disease association could involve conflating the
+          gene with its altered gene product.
+        type: array
+        items:
+          $ref: '#/definitions/conflated_node'
+     needs_post_processing:
+       description: >-
+       type: object
+       patternProperties: 
+         .: 
+           type:
+           patternProperties:
+             .:
+               ## WHERE the association comes from and HOW it was made                                
+               provenance:
+                 description: >-
+                   Python-list-of-dictionaries-like, traces the provenance of the
+                   association from the first knowledge-source/API-queried/resource (the
+                   first entry in the list) back.
+                 type: array
+                 items:
+                   $ref: '#/definitions/knowledge_source_provenance'
+               website_format:
+                 description: >-
+                   string that needs to be parsed. Gives format for the relevant webpages 
+                   that show this association in a knowledge-source/resource described in 
+                   the provenance slot. There may be multiple websites to show one 
+                   association. Inside each bracket is human-readable info on what goes into 
+                   that part of the url. First entry in bracket is whether multiple IDs can 
+                  be put in the url there or not; second entry is what kind of ID goes there 
+                  (semantic type of node and ID space); third entry is optional, what 
+                  separator is needed to format multiple IDs in that part of the URL. Example 
+                  is https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/
+                  geneid__{one,gene_NCBIGene_id}-source__LHGDN/      
+               type: string          
+          
+          
+          
+          
+
+      ## note: BTE post-processing of an API response may be needed to generate 
+      ##       the website urls and publications in this structure   
+      
+      websites:
+        description: >-
+          Python-list-like, lists the relevant webpages that show this
+          association in a knowledge-source/resource described in the provenance
+          slot. There may be multiple websites to show one association.
+        type: array
+        items:
+          type: string
+          format: uri
+      publications:
+        description: >-
+          Python-dictionary-like, lists the publications linked to this
+          association by a knowledge-source/resources described in the
+          provenance slot.
+        $ref: '#/definitions/kgs_reference'
+      ## MEASURES give INFO about this association and can be EVIDENCE for it                      
+      numeric_measures_present:
+        description: >-
+          Whether any kind of numeric measure is present. This can be related to
+          how probable the existence of this association is, how much
+          contradictory information there is on whether this association exists
+          or not, how confident one is in this association, how specific this
+          association is (whether the nodes connected via this association are
+          also connected to many other nodes), etc.
+        type: boolean
+      numeric_measures:
+        description: >-
+          Python-list-of-dictionaries-like, gives information about the measure
+          and gives its value for the specific edge/association.
+        type: array
+        items:
+          $ref: '#/definitions/numeric_measure'
+      category_measures_present:
+        description: >-
+          Whether any kind of  measure with categories is present. This can be
+          related to how probable the existence of this association is, how much
+          contradictory information there is on whether this association exists
+          or not, how confident one is in this association, how specific this
+          association is (whether the nodes connected via this association are
+          also connected to many other nodes), etc.
+        type: boolean
+      category_measures:
+        description: >-
+          Python-list-of-dictionaries-like, gives information about the measure
+          and gives its value for the specific edge/association.
+        type: array
+        items:
+          $ref: '#/definitions/category_measure'
+      ## CONTEXT/RELEVANCE           
+      association_context:
+        description: >-
+          Python-dictionary-like, used ONLY when the association occurred in a
+          specific context that ideally is kept in account during interpretation
+          of the association. It could be that the association was made in a
+          specific taxon (species), a specific disease or experimental context
+          (cancer cell line data), a specific cohort, etc.
+        $ref: '#/definitions/kgs_context'
+      ## may set up slots later for text-mined, clinical-data/exposures, 
+      ##   specific variant...    
+    
+    
+    
+    
+    
+    
+    
+    
+  association_no-required-field-post-process:    
+    required:
+      - supportBatch
+      - inputs
+      - outputs
+      - predicate
+      - provenance
+      - numeric_measures_present
+      - category_measures_present
+    properties:
+      ## information used in the query setup and node type parsing    
+      supportBatch:
+        type: boolean
+      inputSeparator:
+        description: >-
+          If this API supports multiple input IDs in one query, this is the
+          symbol that needs to be between IDs
+        type: string
+      inputs:
+        description: >-
+          Python-list-of-dictionaries-like, describes the identifier namespace
+          of the inputs for the query.
+        type: array
+        items:
+          $ref: '#/definitions/input_info'
+      outputs:
+        description: >-
+          Python-list-of-dictionaries-like, describes the identifier namespace
+          and the API/JSON response slots of the query's response.
+        type: array
+        items:
+          $ref: '#/definitions/output_info'
+      ## WHAT the relationship is                    
+      predicate:
+        type: object
+        required:
+          - biolink
+        properties:
+          biolink:
+            description: >-
+              Biolink relation that best describes the association. For
+              formatting, omit the biolink prefix and use underscores in place
+              of spaces in the string. Maps to the predicate field in a TRAPI
+              Edge.
+            type: string
+          id:
+            description: >-
+              Relation (OWL ObjectProperty, formatted like a CURIE as prefix:id)
+              that best describes the association. May be a closer description
+              of the true association or the original predicate in the data. For
+              formatting, (1) use the official ontology prefix or the prefix
+              mapped to a namespace in the Biolink Model in all-uppercase and
+              (2) use underscores in place of spaces. Maps to the relation field
+              in a TRAPI Edge.
+            type: string
+          label:
+            description: >-
+              human-readable label for id to help with human interpretation of
+              the association
+            type: string
+      nodes_conflated:
+        description: >-
+          Python-list-of-dictionaries-like, used when the association involves
+          conflating the Biolink entity classes/types of the connected nodes.
+          For example, a gene-disease association could involve conflating the
+          gene with its altered gene product.
+        type: array
+        items:
+          $ref: '#/definitions/conflated_node'
+      ## WHERE the association comes from and HOW it was made                                
+      provenance:
+        description: >-
+          Python-list-of-dictionaries-like, traces the provenance of the
+          association from the first knowledge-source/API-queried/resource (the
+          first entry in the list) back.
+        type: array
+        items:
+          $ref: '#/definitions/knowledge_source_provenance'
+      ## note: BTE post-processing of an API response may be needed to generate 
+      ##       the website urls and publications in this structure             
+      websites:
+        description: >-
+          Python-list-like, lists the relevant webpages that show this
+          association in a knowledge-source/resource described in the provenance
+          slot. There may be multiple websites to show one association.
+        type: array
+        items:
+          type: string
+          format: uri
+      website_format:
+        description: >-
+          string that needs to be parsed. Gives format for the relevant webpages 
+          that show this association in a knowledge-source/resource described in 
+          the provenance slot. There may be multiple websites to show one 
+          association. Inside each bracket is human-readable info on what goes into 
+          that part of the url. First entry in bracket is whether multiple IDs can 
+          be put in the url there or not; second entry is what kind of ID goes there 
+          (semantic type of node and ID space); third entry is optional, what 
+          separator is needed to format multiple IDs in that part of the URL. Example 
+          is https://www.disgenet.org/browser/0/1/1/{multiple,disease_umls_ids,sep=::}/
+          geneid__{one,gene_NCBIGene_id}-source__LHGDN/      
+        type: string
+      publications:
+        description: >-
+          Python-dictionary-like, lists the publications linked to this
+          association by a knowledge-source/resources described in the
+          provenance slot.
+        $ref: '#/definitions/kgs_reference'
+      ## MEASURES give INFO about this association and can be EVIDENCE for it                      
+      numeric_measures_present:
+        description: >-
+          Whether any kind of numeric measure is present. This can be related to
+          how probable the existence of this association is, how much
+          contradictory information there is on whether this association exists
+          or not, how confident one is in this association, how specific this
+          association is (whether the nodes connected via this association are
+          also connected to many other nodes), etc.
+        type: boolean
+      numeric_measures:
+        description: >-
+          Python-list-of-dictionaries-like, gives information about the measure
+          and gives its value for the specific edge/association.
+        type: array
+        items:
+          $ref: '#/definitions/numeric_measure'
+      category_measures_present:
+        description: >-
+          Whether any kind of  measure with categories is present. This can be
+          related to how probable the existence of this association is, how much
+          contradictory information there is on whether this association exists
+          or not, how confident one is in this association, how specific this
+          association is (whether the nodes connected via this association are
+          also connected to many other nodes), etc.
+        type: boolean
+      category_measures:
+        description: >-
+          Python-list-of-dictionaries-like, gives information about the measure
+          and gives its value for the specific edge/association.
+        type: array
+        items:
+          $ref: '#/definitions/category_measure'
+      ## CONTEXT/RELEVANCE           
+      association_context:
+        description: >-
+          Python-dictionary-like, used ONLY when the association occurred in a
+          specific context that ideally is kept in account during interpretation
+          of the association. It could be that the association was made in a
+          specific taxon (species), a specific disease or experimental context
+          (cancer cell line data), a specific cohort, etc.
+        $ref: '#/definitions/kgs_context'
+      ## may set up slots later for text-mined, clinical-data/exposures, 
+      ##   specific variant...
+  ## DEFINITIONS for sub-schemas used in the x-bte-kgs-association above              
+  input_info:
+    type: object
+    required:
+      - id
+      - semantic
+    properties:
+      id:
+        description: ID namespace prefix for the query input
+        type: string
+      semantic:
+        description: Biolink entity class for the query input
+        type: string
+  output_info:
+    type: object
+    required:
+      - id
+      - semantic
+      - mapped_response_field
+    properties:
+      id:
+        description: ID namespace prefix for the query output
+        type: string
+      semantic:
+        description: Biolink entity class for the query output
+        type: string
+      mapped_response_field:
+        ## replaced x-bte-response-mapping with this and 
+        ##  other mappings to response fields for publications and measure values      
+        description: >-
+          Dot-notation for slot in API/JSON response that maps to the output
+          entity
+        type: string
+  conflated_node:
+    type: object
+    required:
+      - original_type
+      - conflated_type
+    properties:
+      original_type:
+        description: >-
+          The current Biolink entity class (aka the node type) connected to this
+          edge, which is being conflated with another Biolink entity class.
+        type: string
+      conflated_type:
+        description: >-
+          The Biolink entity class (aka the node type) that the association is
+          rooted in from a biological point-of-view. For example, a gene-disease
+          association is often really based on the gene product and its
+          activities; the original_type would be gene and the conflated_type
+          would be gene product.
+        type: string
+      where:
+        description: >-
+          Name of the knowledge-source/API/resource where this happened. Matches
+          the name of a knowledge-source in the provenance slot.
+        type: string
+  knowledge_source_provenance:
+    type: object
+    required:
+      - name
+      - knowledge_source_type
+    properties:
+      name:
+        description: >-
+          Name of the knowledge-source/API/resource. Format is (1) the full name
+          with original spelling/case, (2) replace spaces with underscores.
+        type: string
+      knowledge_source_type:
+        ## May eventually set as enum to require a set number of options                             
+        description: >-
+          type of knowledge-source/API/resource. Format is (1) all undercase,
+          (2) replace spaces with underscores. Current possible values include
+          service, knowledgebase, publications, text, text_mined_db...
+        type: string
+      method:
+        ## Ideally, very similar methods have the same values. The many 
+        ##   possible options make it hard to make as an enum.        
+        description: >-
+          A few words describing  what the knowledge-source/API/resource did to
+          build the association from the data/knowledge it ingested. Format is
+          (1) all undercase except for abbreviations and formal names, (2)
+          replace spaces with underscores. Current possible values include
+          ingest_consolidate (ingest and merge rows of info),
+          association_from_shared_annot (infer association since they are
+          annotated to the same things), NLP_LHGDN, NLP_BeFree, ingest (just ETL
+          it), propagate_from_phenotype, propagate_from_protein_variant,
+          propagate_from_sequence_variant, propagate_from_orthology, NLP_Scigraph, 
+          NLP_Scibite, extract_metabolite_to_protein_annot,
+          extract_metabolite_to_disease_annot...
+        type: string
+      method_info:
+        description: >-
+          Python-dictionary-like. Gives websites, publications, etc. where the
+          user can learn more about the knowledge-source/API/resource and what
+          it did to build the association from the data/knowledge it ingested.
+        $ref: '#/definitions/kgs_reference'
+      version:
+        ## could later change it to a Python-dictionary-like object, so a "type"
+        ##   of version could be specified in the key like "date of last update", 
+        ##   "official version number", "range of dates" that this resource covers, etc.           
+        description: >-
+          Knowledge-source/API/resource version. Format is (1) the full string
+          with original spelling/case, (2) replace spaces with underscores.
+        type: string
+      knowledge_source_context:
+        description: >-
+          Python-dictionary-like, used ONLY when the
+          knowledge-source/API/resource is restricted to a specific context that
+          ideally is kept in account during interpretation of its associations.
+          It could be that the knowledge-source was restricted to a specific
+          taxon (species), a specific disease or experimental context (cancer
+          cell line data), a specific cohort, etc.
+        $ref: '#/definitions/kgs_context'
+  kgs_reference:
+    description: >-
+      Python-dictionary-like. Keys are prefixes to identify the identifier 
+      namespace for the publications/websites (examples include URL, DOI, PMID, 
+      PMC, BIORIXV...). Format is all-uppercase and underscores instead of spaces. 
+      Values are string for mapping to the API/JSON slot OR Python-list-like with 
+      unique IDs or URLs for the publications/websites. For URLs, use https when
+      possible.
+    type: object
+    patternProperties:
+      .:
+        oneOf:
+          - type: string
+          - type: array
+            items:
+              type: string
+  kgs_context:
+    description: >-
+      Python-dictionary-like. Keys describe what is the type of context. It
+      could be that the knowledge-source/association was restricted to a
+      specific taxon (species), a specific disease or experimental context
+      (cancer cell line data), a specific cohort, etc. The values are lists of
+      unique CURIEs or few-word strings for the
+      taxons/diseases/cohorts/experimental setups. One could draw from
+      Translator-preferred ontologies to find CURIEs that describe the contexts.
+    type: object
+    patternProperties:
+      taxon_specific|disease_specific|cohort_specific|experimental_specific:
+        type: array
+        items:
+          type: string         
+  numeric_measure:
+    type: object
+    allOf:
+      - $ref: '#/definitions/general_measure'
+      - type: object
+        required:
+          - range
+          - numeric_direction_info
+        properties:
+          range:
+            description: >-
+              Python-dictionary-like. Description of the expected range for the
+              values. Define a lower and upper bound (minimum and maximum),
+              inclusive (including the bound) or exclusive (excluding the
+              bound). Infinities are -INF and INF.
+            type: object
+            properties:
+              minExclusive:
+                type: number
+              maxExclusive:
+                type: number
+              minInclusive:
+                type: number
+              maxInclusive:
+                type: number
+          numeric_direction_info:
+            description: >-
+              Python-dictionary-like. Each key specifies a direction (examples
+              include larger, smaller, closer_to_zero, more_negative,
+              more_positive). Each value specifies what the direction means
+              (more_specific, more_evidence, more_confident, more_consistent,
+              more_probable, etc.). One may want to specify multiple directions
+              like the meaning when a value is close to 0 vs close to the
+              bounds.
+            type: object
+            patternProperties:
+              .:
+                type: string
+  category_measure:
+    type: object
+    allOf:
+      - $ref: '#/definitions/general_measure'
+      - type: object
+        required:
+          - categories_list
+        properties:
+          categories_list:
+            description: >-
+              Python-list-like. The possible categories for this measure, put in
+              order if it is ordered.
+            type: array
+            items:
+              type: string
+          category_direction_info:
+            description: >-
+              If the list of categories is ordered, this specifies how the meaning 
+              changes as the categories are read from first-element to last-element 
+              (examples include more_specific, more_evidence, more_confident, 
+              more_consistent, more_probable, etc.)
+            type: string
+  general_measure:
+    type: object
+    required:
+      - name
+      - standard_label
+      - value
+    properties:
+      name:
+        description: The measure name, used by the knowledge-source/API/resource
+        type: string
+      standard_label:
+        description: >-
+          Human-readable, easy-to-understand name. This slot can be used to
+          rename the measure. Similar measures may have the same standard_label.
+        type: string
+      ontology_term:
+        description: >-
+          Term from an ontology (ideally an OWL Class) that corresponds with
+          this measure. Format is prefix:id_number, with (1) the official
+          ontology prefix or the prefix mapped to a namespace in the Biolink
+          Model, and (2) prefix in all-uppercase.
+        type: string
+      value:
+        ## this can be mapped to the api response so maybe don't set it to a type...            
+        description: >-
+          Value for this measure for this specific association/edge. Likely
+          mapped to a slot in the API/JSON response.
+      missing_info:
+        description: >-
+          Short string explaining what a missing/NULL/NA value for this measure
+          in a single association/edge means. The assumption is that only some
+          of the associations/edges have the value missing for this measure.
+        type: string
+      measure_info:
+        description: >-
+          Python-list-of-dictionaries-like, lists the publications/websites that
+          describe this knowledge-source/API/resource measure in more detail.
+        $ref: '#/definitions/kgs_reference'

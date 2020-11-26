@@ -1,0 +1,30 @@
+## still a WIP:
+measure_info:
+- 
+        monarch_frequency_id:
+          ## there wasn't a way to easily find what values there are for this
+          ## I assumed they were the children of https://hpo.jax.org/app/browse/term/HP:0040279 
+          ## also often is JSON null...
+          categories_list:
+            ["HP:0040280", "HP:0040281", "HP:0040282", "HP:0040283", "HP:0040284", "HP:0040285"]   
+        monarch_frequency_label:
+          categories_list: 
+            ["Obligate", "Very frequent", "Frequent", "Occasional", "Very rare", "Excluded"]   
+        monarch_onset_id:
+          ## there wasn't a way to easily find what values there are for this
+          ## I assumed they were the descendents of https://hpo.jax.org/app/browse/term/HP:0003674
+          takes_value_from_field: "associations.onset.id"
+          expected_type: string  ## ?? or null...how to show this?
+          enum_values: 
+            ["HP:0410280", "HP:0003621", "HP:0003593", "HP:0011463",
+             "HP:0003581", "HP:0011462", "HP:0003584", "HP:0003596",
+             "HP:0030674", "HP:0011461", "HP:0011460", "HP:0003623",
+             "HP:0003577"]   
+        monarch_onset_label:
+          takes_value_from_field: "associations.onset.label"
+          expected_type: string  ## ?? or null...how to show this?
+          enum_values: 
+            ["Pediatric onset", "Juvenile onset", "Infantile onset", "Childhood onset",
+             "Adult onset", "Young adult onset", "Late onset", "Middle age onset",
+             "Antenatal onset", "Fetal onset", "Embryonal onset", "Neonatal onset",
+             "Congenital onset"]     

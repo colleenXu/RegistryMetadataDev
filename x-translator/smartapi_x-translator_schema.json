@@ -20,7 +20,7 @@
                 "KP",
                 "ARA",
                 "ARS",
-                "SRI_Service"
+                "SRI Service"
               ]
             },
             "team": {
@@ -30,22 +30,22 @@
               "items": {
                 "type": "string",
                 "enum": [
-                  "Service_Provider",
-                  "Multiomics_Provider",
-                  "Clinical_Data_Provider",
-                  "Connections_Hypothesis_Provider",
-                  "Molecular_Data_Provider",
-                  "Text_Mining_Provider",
-                  "Exposures_Provider",
-                  "Genetics_Provider",
-                  "Ranking_Agent",
-                  "imProve_Agent",
-                  "Unsecret_Agent",
-                  "Explanatory_Agent",
-                  "Expander_Agent",
-                  "Exploring_Agent",
-                  "Link_Brokers",
-                  "Standards_Reference_Implementation_Team"
+                  "Service Provider",
+                  "Multiomics Provider",
+                  "Clinical Data Provider",
+                  "Connections Hypothesis Provider",
+                  "Molecular Data Provider",
+                  "Text Mining Provider",
+                  "Exposures Provider",
+                  "Genetics Provider",
+                  "Ranking Agent",
+                  "imProve Agent",
+                  "Unsecret Agent",
+                  "Explanatory Agent",
+                  "Expander Agent",
+                  "Exploring Agent",
+                  "Link Brokers",
+                  "Standards Reference Implementation Team"
                 ]
               }
             }

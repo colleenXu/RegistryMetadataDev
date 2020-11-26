@@ -1,0 +1,277 @@
+  x-bte-kgs-associations:
+  ## there is a MIX of requirements this is trying to meet
+  ## what to have as info on metaKG level
+  ## what to use to help parse response...
+ 
+ 
+  ## DISEASE -> GENE ASSOCIATIONS 
+    disease-gene1:  
+      ## information used in the query setup and node type parsing    
+      supportBatch: true
+      inputSeparator: ','
+      parameters:
+        ## allow everything from this operation to be returned      
+        fields: disgenet.genes_related_to_disease
+      requestBody:          
+        body:
+          q: '{inputs[0]}'
+          scopes: 'mondo.xrefs.umls, disgenet.xrefs.umls'
+        header: application/x-www-form-urlencoded 
+      inputs:
+      - id: UMLS
+        semantic: Disease   
+      outputs:
+      - id: NCBIGene
+        semantic: Gene
+        ## replaced x-bte-response-mapping with this        
+        response_field: disgenet.gene_related_to_disease.gene_id
+    ## not present since not used here: a "restricted_to" key-value for when this task can really only successfully run on a subset of query inputs...      
+      ## WHAT the relationship is: likely 1 predicate (biolink) per metaKG edge
+      ##                           >=1 relation (non-biolink) per metaKG edge
+      predicate:
+        default: related_to    ## use in metaKG and add to specific associations 
+        ## no response_field key-value since not in API response 
+      relation:
+        default_id: "SIO:001403"
+        default_label: "SIO:is_associated_with"  
+        ## can use default_map as key with dictionary of ids (keys) and labels (values)
+        ##   instead of the default/label keys used here, IF there are multiple
+        ##   relations possible in this response 
+        ## no response_field key-value since not in API response 
+      nodes_conflated:
+        ## likely no info on this in API response so no response_field
+        "$ref": "#/components/x-bte-reusable-info/disgenet_dggd/nodes_conflated"
+      ## MEASURES/INFO ABOUT THE RELATIONSHIP        
+      numeric_measures_present: true
+      numeric_measures:
+       ## has mappings to response fields 
+       "$ref": "#/components/x-bte-reusable-info/disgenet_dggd/numeric_measures"
+      category_measures_present: false
+      ## WHERE/WHEN/HOW ASSOCIATION IS MADE
+      publications:
+        ## in this case, can map directly to a a response field
+        pmid: disgenet.genes_related_to_disease.pubmed    
+      ## TODOTODOTODO MAPPING TO HAVE ACCESS TO OTHER FIELDS?? 
+      ## so as far as I can tell, Kevin's right and you don't have access to the other fields
+      ##   unless you do some kind of response mapping. 
+      other_fields:  
+      - name:
+        response_field:
+        value_type:
+      summary_provenance_list:  ## used by metaKG
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/mydisease"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/disgenet"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/LHGDN_GeneRIF"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/BEFREE_Medline"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/HPO_annotations"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/Uniprot"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/Cancer_Genome_Interpreter"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/Clinvar"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/GWAS_catalog"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/GWASdb"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/MGD"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/RGD"
+      ## only one entry, specific_subset lists the three subsets of CTD used
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/CTD"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/Clingen"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/Genomics_England_PanelApp"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/Psygenet"
+      - "$ref": "#/components/x-bte-reusable-info/summary_provenance/Orphanet"
+      summary_provenance_methods:  ## used by metaKG
+        ingest_consolidate: "mydisease.info downloaded https://www.disgenet.org/static/disgenet_ap1/files/downloads/all_gene_disease_pmid_associations.tsv.gz and then merged rows that differed only by the pmid column value"
+        ingest: "generic term used when an ETL process was done to get the associations"
+        NLP_LHGDN:
+          method_info:
+            url:
+            - 'https://www.disgenet.org/dbinfo#section11'
+            pmid:
+            - "18433469"
+        NLP_BEFREE:
+          method_info:
+            url:
+            - 'https://www.disgenet.org/dbinfo#section11'
+            pmid:
+            - "25886734"      
+            doi:
+            - "10.1155/2014/253128"
+        propagate_from_phenotype:
+          method_info:
+            url:
+            - 'https://www.disgenet.org/dbinfo#section11'          
+        propagate_from_protein_variant:
+          method_info:
+            url:
+            - 'https://www.disgenet.org/dbinfo#section11'   
+        propagate_from_sequence_variant:
+          method_info:
+            url:
+            - 'https://www.disgenet.org/dbinfo#section11'       
+        propagate_from_orthology:
+          method_info:
+            url:
+            - 'https://www.disgenet.org/dbinfo#section11'     
+      ## used by ARA if they want more info for specific associations returned 
+      ## requires post-processing
+      response_map_to_full_provenance:  
+        ## map values from this response_field to lines of provenance. 
+        ## if this involves multiple fields, keep as string with comma-delimited 
+        ## REF TO A DIFF JSON FILE. 
+        "$ref": "riffing_on_postprocess_example2-full_provenance_map.yaml#/"
+      website_parsing:      
+        template: "https://www.disgenet.org/browser/0/1/1/{input_diseases}/geneid__{output_gene}-source__ALL/"
+        input_diseases:
+          id: UMLS
+          semantic: Disease
+          ## if the field below isn't present, then multiple fields not allowed
+          ## if field below is present, then the sep is the value
+          multiple_allowed: "::"
+        output_gene:
+          id: NCBIGene
+          semantic: Gene        
+  ## put the edge info/metadata that will be reused for x-bte-kgs-associations
+  x-bte-reusable-info:
+    ## put here since it's used repeatedly                             
+    ## ONLY enough information to realize if two sources draw from the same thing    
+    ## keys used here: name, knowledge_source_type, version, version_type, applies_to_all_edges, 
+    ## optional: specific_subset
+    summary_provenance:
+      mydisease:
+        name: "MyDisease.info API"
+        knowledge_source_type: service
+        version: "2020-10-26"
+        version_type: "date_of_latest_update"
+        applies_to_all_edges: true
+      disgenet:          
+        name: DisGeNET
+        knowledge_source_type: knowledgebase
+        version: "7.0"
+        version_type: "version_number"
+        applies_to_all_edges: true
+      LHGDN_GeneRIF:  
+        name: GeneRIF
+        knowledge_source_type: text
+        version: "2009-03-31"
+        version_type: "version_date"   
+        applies_to_all_edges: false
+      BEFREE_Medline:                      
+        name: MEDLINE_abstracts
+        knowledge_source_type: publications
+        ## trying to get these dates parsed as simple strings          
+        version: "1970-01_to_2019-12"
+        version_type: "date-range_year-month"
+        applies_to_all_edges: false
+      HPO_annotations:
+        name: HPO_annotations
+        knowledge_source_type: knowledgebase       
+        applies_to_all_edges: false
+      Uniprot:                        
+        name: UniProt
+        knowledge_source_type: knowledgebase   
+        ## tag for if a specific subset is used
+        specific_subset: human
+        applies_to_all_edges: false
+      Cancer_Genome_Interpreter:                        
+        name: Cancer_Genome_Interpreter
+        knowledge_source_type: knowledgebase   
+        applies_to_all_edges: false
+      Clinvar:                        
+        name: ClinVar
+        knowledge_source_type: knowledgebase  
+        applies_to_all_edges: false
+      GWAS_catalog:                        
+        name: NHGRI_EBI_GWAS_CATALOG
+        knowledge_source_type: knowledgebase   
+        applies_to_all_edges: false
+      GWASdb:                        
+        name: GWASdb
+        knowledge_source_type: knowledgebase
+        applies_to_all_edges: false
+      MGD:                        
+        name: MGD
+        knowledge_source_type: knowledgebase   
+        applies_to_all_edges: false
+      RGD:                        
+        name: RGD
+        knowledge_source_type: knowledgebase 
+        applies_to_all_edges: false
+      CTD:                        
+        name: CTD
+        knowledge_source_type: knowledgebase  
+        applies_to_all_edges: false
+        specific_subset: "human,mouse,rat"
+      Clingen:
+        name: ClinGen
+        knowledge_source_type: knowledgebase   
+        applies_to_all_edges: false
+      Genomics_England_PanelApp:                        
+        name: Genomics_England_PanelApp
+        knowledge_source_type: knowledgebase   
+        applies_to_all_edges: false
+      Psygenet:                        
+        name: PsyGeNET
+        knowledge_source_type: knowledgebase   
+        applies_to_all_edges: false
+      Orphanet:                        
+        name: Orphanet
+        knowledge_source_type: knowledgebase   
+        applies_to_all_edges: false
+    ## all disease-gene and gene-disease operations using disgenet will have these properties 
+    disgenet_dggd:  
+      nodes_conflated:
+      - original_type: Disease
+        conflated_type: PhenotypicFeature
+        where: DisGeNET
+      - original_type: Gene
+        conflated_type: GeneProduct
+        where: DisGeNET
+      numeric_measures:
+      - name: GDAscore
+        standard_label: association_score
+        ## mapped to response field         
+        value: disgenet.genes_related_to_disease.score
+        range:
+          minExclusive: 0
+          maxInclusive: 1
+        numeric_direction_info:
+          larger: more_evidence
+        measure_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section31'
+      - name: EI
+        standard_label: evidence_index
+        ## mapped to response field 
+        value: disgenet.genes_related_to_disease.EI
+        range:
+          minExclusive: 0
+          maxInclusive: 1
+        numeric_direction_info:
+          larger: more_consistent
+        measure_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section36'
+      - name: DSI
+        standard_label: gene_specific_to_disease
+        ontology_term: 'SIO:001351'
+        ## mapped to response field 
+        value: disgenet.genes_related_to_disease.DSI
+        range:
+          minExclusive: 0
+          maxInclusive: 1
+        numeric_direction_info:
+          larger: more_specific
+        measure_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section33'
+      - name: DPI
+        standard_label: gene_specific_to_disease_class
+        ontology_term: 'SIO:001352'
+        ## mapped to response field 
+        value: disgenet.genes_related_to_disease.DPI
+        range:
+          minExclusive: 0
+          maxInclusive: 1
+        numeric_direction_info:
+          smaller: more_specific
+        measure_info:
+          url:
+          - 'https://www.disgenet.org/dbinfo#section34'  
