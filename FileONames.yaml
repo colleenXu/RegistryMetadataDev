@@ -1,17 +1,63 @@
-## names of more general columns/edge properties
-references_pmid
+## thoughts on required stuff:
+query_info:
+  supportBatch: true/false
+(optional fields inputSeparator, parameters, requestBody, )
+inputs:
+- id: UMLS
+  semantic: Disease
+outputs:    ## may need to make clear that the response field isn't a CURIE?
+- id: NCBIGene
+  semantic: Gene     
+  response_field: "$disgenet.gene_related_to_disease.gene_id"
+biolink_predicate: related_to    ## same as TRAPI/biolink predicate slot
+relation_id: "SIO:001403"        ## same as TRAPI/biolink relation slot
+(optional fields relation_label, nodes_conflated, websites, publications_ fields, provenance, numeric_measures, category_measures, context_relevance)
+I would like to make a publications_ and a websites field required but ehh I think KPs doesnt always have this
+
+if you have websites field with situation 3 (map/parse):  
+## will there be only one website template for an association ever? 
+websites:
+  instructions:
+  template:
+  template_keys:
+  (optional field bte_postprocess_code)
+if you have provenance field with situation 3 (map/parse):  
+provenance:
+  instructions:
+  response_fields_used:
+  mapping_file:
+  (optional field bte_postprocess_code)
+if you have numeric_measures field (this is an array):
+- name: "DisGeNET gene-disease association score"
+  value: "$disgenet.genes_related_to_disease.score"
+  range:
+    minExclusive: 0
+    maxInclusive: 1
+  numeric_direction_info:
+    larger: more_evidence
+  (optional field website_for_info)
+  
+provenance/mapping:
+  name: "MyDisease.info API"
+  knowledge_source_type: service
+  description: >- 
+      Downloaded https://www.disgenet.org/static/disgenet_ap1/files/downloads/all_gene_disease_pmid_associations.tsv.gz. 
+      Merged the gene-disease associations where the pmid column values differed but all column values were the same; 
+      made the pmid column an array of the pmids.   
+  (optional field website_for_info, knowledge_source_context)
 
 ## names of resources
 "MyDisease.info API"
-DisGeNET
-GeneRIF
-MEDLINE_abstracts
-HPO_annotations
-UniProt
-Cancer_Genome_Interpreter  ## since CGI feels like too general an acronym
+DisGeNET  
+GeneRIFs  (notice the plural)
+"MEDLINE abstracts"
+"HPO annotations"
+"UniProtKB" (not UniProtKB/Swiss-Prot??) 
+"Cancer Genomics Interpreter"  ## call this the "Cancer Genomics Interpreter Catalog of Cancer Genes"??
 ClinVar
-NHGRI-EBI_GWAS_Catalog
+NHGRI-EBI GWAS Catalog
 GWASdb
+
 MGD
 RGD
 CTD
@@ -24,177 +70,18 @@ Orphanet
 ## version types 
 date_last_updated 
 version_number
-date_of_data  ## generic because I don't really know what this is: not date_downloaded, version_date, etc...
-date-range_in_year-month
-unknown
+data_from_this_date  ## generic because I don't really know what this is: not date_downloaded, version_date, etc...
 
-## specific_subset_used values
-human
-"human,mouse,rat"
+## methods
+ingest
+NLP
+manual_curation  ## means people are trained to do this (aka curators) and/or submissions are REVIEWED by curators before entering KB
+propagate_from_phenotype
+propagate_from_protein_variant
+propagate_from_seq_variant
+submission  ## these are made by people BUT these aren't necessarily made or reviewed by curators
 
-## names of specific columns/edge properties
-DisGeNET_SourceKey 
-DisGeNET_YearInitialReported
-DisGeNET_YearLastReported
-DisGeNET_AssociationScore
-DisGeNET_EvidenceIndex
-DisGeNET_Gene-DiseaseSpecificity
-DisGeNET_Gene-DiseaseClassSpecificity
-
-## structure
-## example: MyDisease.info yaml, disease -> gene operation (which uses disgenet)
-components:
-  x-bte-kgs-associations:
-    disease-gene1:
-      ## HOW TO QUERY  
-      supportBatch: true
-      inputSeparator: ','
-      parameters:
-        fields: disgenet.genes_related_to_disease
-      requestBody:
-        body:     
-          q: '{inputs[0]}'
-          scopes: 'mondo.xrefs.umls, disgenet.xrefs.umls'
-        header: application/x-www-form-urlencoded
-      inputs:
-        - id: UMLS
-          semantic: Disease
-      outputs:
-        - id: NCBIGene
-          semantic: Gene     
-          response_field: disgenet.gene_related_to_disease.gene_id
-      ## HOW TO PARSE THE RESPONSE: 
-      ##  organizes the fields into the big 4+publications/website_parsing (maybe other)
-      ##  gives info on how to parse them and name them as edge properties...
-      bte_association_parsing:
-        ## what is the relationship
-        bte_predicates:
-          ## in some cases, we do need post-processing to map the non-biolink predicates to biolink...
-          ## here, we don't need post-processing. We also don't need to map to a response field...
-          ## so the values are STATIC and the metaKG can reference these directly
-          biolink:
-            needs_post_processing: false
-            value: "related_to"
-          id:
-            needs_post_processing: false
-            value: "SIO:001403"
-          label:
-            needs_post_processing: false
-            value: "SIO:is_associated_with"  
-        ## where the relationship comes from / how and when was it made
-        ## this groups the fields related to provenance and gives basic info on how to set up these columns
-        bte_provenance_related:  
-        - name: DisGeNET_SourceKey
-          response_field: disgenet.genes_related_to_disease.source
-          expected_type: string
-          expected_format: keyword
-        - name: DisGeNET_YearInitialReported
-          response_field: disgenet.genes_related_to_disease.YearInitial
-          expected_type: number
-          expected_format: date-year
-        - name: DisGeNET_YearLastReported
-          response_field: disgenet.genes_related_to_disease.YearFinal
-          expected_type: number
-          expected_format: date-year             
-        bte_publications:   ## users consider this REQUIRED evidence
-        ## response field usually maps to my kgs_reference model...I just add this key to 
-        ##    say what kind of identifier is being used
-          needs_post_processing: false
-          pmid: disgenet.genes_related_to_disease.pubmed
-        bte_website_parsing:   ## users consider this REQUIRED evidence: use info below to generate the urls
-        ## usually, response fields don't include this...if they include it, maybe they can use bte_websites instead
-          response_fields_used: 
-          - disgenet.genes_related_to_disease.source
-          - disgenet.genes_related_to_disease.gene_id
-          other_fields_needed:
-          - array_of_inputs ## the UMLS Disease IDs used as input to the query, as an array of strings
-          parsing_description: >-
-            post-processing can be done using the input disease ids, response gene id (gene_id field), and response source 
-            (source field) to generate the DisGeNET browser url for the association. The url template is in 
-            python3 format string form (https://docs.python.org/3/library/string.html#format-string-syntax), 
-            where the curly-brackets surround the replacement fields. 
-          parsing_info:
-            instructions: >-
-              1. write code to generate multiple urls if there are multiple input disease ids, response gene ids, 
-              and/or response sources (one could loop through one or more array). 
-              2. For each url...
-                 Use 1 input disease id to replace the '{input_disease}' substring of the template. 
-                 Use disgenet.genes_related_to_disease.gene_id to replace the '{response_gene}' substring of the template.
-                 Use disgenet.genes_related_to_disease.source to replace the '{response_source}' substring of the template. 
-            template: "https://www.disgenet.org/browser/0/1/0/{input_disease}/geneid__{response_gene}-source__{response_source}/"
-          parsing_code_example: ""  ## MAKE THIS
-        ## numeric measures
-        bte_numeric_measures:
-        - name: DisGeNET_AssociationScore
-          response_field: disgenet.genes_related_to_disease.score
-          expected_type: number
-          expected_format: float
-        - name: DisGeNET_EvidenceIndex
-          response_field: disgenet.genes_related_to_disease.EI
-          expected_type: number
-          expected_format: float
-        ## no bte_category_measures for associations from this resource
-        ## no bte_context_relevance for this resource...DisGeNET aggregates and makes a database of gene-disease, variant-disease, and disease-disease associations.             
-      ## SEPARATE INFO FOR REASONING
-      ## assuming this always involves some amount of custom post-processing for the operation's data...
-      reasoning_support:
-        nodes_conflated:
-        ## DisGeNET disease-gene relationships conflate diseases/phenotypes and genes/gene-products      
-        - original_type: Disease
-          conflated_type: PhenotypicFeature
-          where: DisGeNET
-        - original_type: Gene
-          conflated_type: GeneProduct
-          where: DisGeNET           
-        numeric_measure_info:
-          response_fields_used: 
-          - disgenet.genes_related_to_disease.score
-          - disgenet.genes_related_to_disease.EI
-          - genes_related_to_disease.DSI
-          - genes_related_to_disease.DPI
-          parsing_description: >-
-            post-processing can be done to map each response field (not the value, the field itself) to a 
-            numeric-measure-info model developed by CX. It provides information on what the measure value means
-            in the context of this association, including what a direction means (like a larger or smaller number)  
-            the expected range of values, and where to go to find out how this measure was generated (like a website
-            or a publication). If possible, the measure is also mapped to an ontology term. 
-          info_file: ""  ## MAKE THIS
-        provenance_info:   
-          response_fields_used: 
-          - disgenet.genes_related_to_disease.source
-          parsing_description: >-
-            post-processing can be done to map from the source value for each association to a 
-            provenance model developed by CX describing what knowledge sources were involved and 
-            their methods of creating/aggregating the associations
-          info_file: ""  ## MAKE THIS
-      ## SEPARATE INFO FOR METAKG
-      metakg_support:
-        summary_predicates:
-          ## perhaps the $ref avoid having to change code here whenever it changes above...
-          biolink:
-            "$ref":"#/components/x-bte-kgs-associations/disease-gene1/bte_association_parsing/bte_predicates/biolink/value"
-          id_list:  ## list since maybe sometimes multiple outside relations were mapped to one biolink term
-          - "$ref":"#/components/x-bte-kgs-associations/disease-gene1/bte_association_parsing/bte_predicates/id/value"
-          label_list:   ## list since maybe sometimes multiple outside relations were mapped to one biolink term
-          - "$ref":"#/components/x-bte-kgs-associations/disease-gene1/bte_association_parsing/bte_predicates/label/value"
-        summary_sources:
-        ## list of the knowledge sources and some querable info. For more, see the reasoning_support/provenance_information and its linkout file 
-        - name: "MyDisease.info API"
-          version: "2020-10-26"
-          version_type: "date_last_updated"
-        - name: DisGeNET
-          version: "7.0"
-          version_type: "version_number"
-        - name: GeneRIF
-          ## trying to get these dates parsed as simple strings          
-          version: "2009-03-31"
-          version_type: "date_of_data"   
-          ## tag for specific subset used
-          specific_subset: human
-        - name: MEDLINE_abstracts
-          ## not sure how to describe this for parsing          
-          version: "1970-01_to_2019-12"
-          version_type: "date-range_in_year-month"  
-        numeric_measures_present: true
-        category_measures_present: false
-        context_relevance_specific: false
+## types of knowledge sources
+service
+knowledgebase
+publications
