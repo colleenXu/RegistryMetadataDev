@@ -1,0 +1,570 @@
+## follows JSON schema, has "$ref" that need to be expanded in use. 
+## notes: address "?" comments, 
+##        check additionalProperties, required
+##        set minItems, maxItems, minProperties, maxProperties
+##        minProperties/maxProperties might work well for setting up range?
+##        descriptions being overwritten by $ref inheritance? 
+title: Schema for objects within x-bte-association-retrieval
+$schema: 'http://json-schema.org/draft-04/schema#'  ## change to a newer draft?
+type: object
+description: >-
+  Describes the operations that retrieve associations/edges between biomedical
+  entities, using a knowledge-provider (KP) API in the Translator ecosystem. 
+  A KP API may do multiple operations of this type. These operations are 
+  defined (kept separate) by their different combinations of input-entity-type,
+  biolink predicate, source, and output-entity-type. 
+properties:
+  components:
+    type: object
+    properties:
+      x-bte-association-retrieval:
+        type: object
+        ## no naming format, but each operation must fit the schema
+        patternProperties:
+          .:
+            $ref: '#/definitions/oneAssociationRetrievalObj'
+        additionalProperties: False
+definitions:
+  oneAssociationRetrievalObj:
+    type: object
+    required:
+      - queryInfo
+      - inputs
+      - outputs
+      - predicateInfo
+      - provenance
+    ## strongly recommended: references
+    ## use if needed: numericMeasures, categoryMeasures, contextRelevance
+    additionalProperties: False
+    properties:
+      queryInfo:
+        type: object
+        required:
+        - supportBatch
+        ## ?? ask Kevin if he had standard formats (get/post)
+        ## could do a oneOf with 2+ schema 
+        ## fields I've seen: inputSeparator, parameters, requestBody...
+        supportBatch:
+          type: boolean
+      inputs:
+        description: >-
+          Array of objects (Python-list-of-dict-like). Describes the 
+          valid inputs and their identifier namespaces for the query. 
+        type: array
+        items:
+          $ref: '#/definitions/inputInfo'
+      outputs:
+        description: >-
+          Array of objects (Python-list-of-dict-like). Describes the 
+          valid outputs, their identifier namespaces, and the API JSON 
+          response fields that contain them. 
+        type: array
+        items:
+          $ref: '#/definitions/outputInfo'
+      ## WHAT the relationship is                    
+      predicateInfo:
+        type: object
+        required:
+          - biolink
+        additionalProperties: False
+        properties:
+        ## biolink, id, label may be described differently depending on the 
+        ##   API/resource's data modeling. Use different schemas to handle this
+          biolink:
+            description: >-
+              Biolink relation that best describes the association. Similar to 
+              the predicate field in a TRAPI (Q)Edge. 
+            oneOf:
+            - $ref: '#/definitions/staticValue'
+            - $ref: '#/definitions/takesOnResponseValue'
+            - $ref: '#/definitions/transformedFromResponseValue'
+          id:
+            description: >-
+              Relation (OWL ObjectProperty) that best describes the association. 
+              Formatted as a CURIE with prefix:ID. May be assigned by Translator
+              team member or may be in the original information. Similar to the 
+              relation field in a TRAPI (Q)Edge.
+            oneOf:
+            - $ref: '#/definitions/staticValue'
+            - $ref: '#/definitions/takesOnResponseValue'
+            - $ref: '#/definitions/transformedFromResponseValue'
+          label:
+            description: >-
+              Human-readable label for id field above. 
+            oneOf:
+            - $ref: '#/definitions/staticValue'
+            - $ref: '#/definitions/takesOnResponseValue'
+            - $ref: '#/definitions/transformedFromResponseValue'
+          nodesConflated:
+          ## currently assuming it doesn't depend on response 
+            description: >-
+              Array of objects (Python-list-of-dict-like). Used when 
+              the associations conflate the Biolink entity classes/types 
+              of the entities involved. For example, gene-disease associations
+              often involve conflation of a gene with its altered gene product. 
+            type: array
+            items:
+              $ref: '#/definitions/conflatedNode'     
+      references:  ## IMPORTANT: users use this as evidence 
+        description: >- 
+          Put the stuff users expect as evidence here. They expect linkouts
+          to external, understandable stuff like publications and webpages
+          that show the association or where it came from. 
+        type: object
+        additionalProperties: False
+        properties: 
+          publications:
+            type: object
+            additionalProperties: False
+            patternProperties:
+            ## keys are ID namespace like pmid, pmc, doi, biorixv, medrxiv...
+            ## assuming the values come from the response  
+              .:  
+                oneOf:
+                - $ref: '#/definitions/takesOnResponseValue'
+                - $ref: '#/definitions/transformedFromResponseValue'   
+          websites:
+          ## at the moment, no APIs provide this. so we provide a schema for 
+          ##   sharing instructions and template to generate the webpage URLs
+            $ref: '#/definitions/transformUsingTemplate'
+      ## WHERE the association and its related info come from, and HOW   
+      provenance:
+        description:
+          Groups together provenance related to this association.
+        type: object
+        properties:
+          associationRetrieval:  
+          ## could be static for simple knowledge-source: follow
+          ##   provenanceModel. 
+          ## but complex knowledge-sources currently involve a good amount 
+          ##   of processing/mapping values from response fields. 
+          ##   Provenance is so tricky because there isn't standardization 
+          ##   and a lot of detailed computationally-available info on 
+          ##   how the associations were made 
+            oneOf:
+            - $ref: '#/definitions/oneProvenanceList' 
+            ## currently assuming only one field used. Need to change?
+            - $ref: '#/definitions/transformedFromResponseValue' 
+      ## MEASURES give INFO about this association and can be EVIDENCE for it                      
+      numericMeasures:
+        description: >-
+          Array of objects (Python-list-of-dict-like), gives info about 
+          the measure and what response field to use to retrieve it. 
+        type: array
+        items:
+          $ref: '#/definitions/oneNumericMeasure'        
+      categoryMeasures:
+        description: >-
+          Array of objects (Python-list-of-dict-like), gives info about 
+          the measure and what response field to use to retrieve it. 
+        type: array
+        items:
+          $ref: '#/definitions/oneCategoryMeasure'             
+      ## RESTRICTIONS on associations available or their interpretation
+      contextRelevance:
+        description: >-
+          Groups together context/relevance related to this association.
+        type: object
+        properties:
+          associationRetrieval:   
+            description: >- 
+              Context/relevance for the info obtained from the association-
+              retrieval operation. It could be that the association was made in 
+              a specific species (taxon), disease context, experimental context
+              (cell line info goes here), cohort, etc. 
+            $ref: '#/definitions/oneContextObj'  
+      ## may set up fields later for other info? like what was used for 
+      ##   triangulation (variant for disease->gene?), text-mining info, 
+      ##   clinical-data/exposures info?
+################################################################################      
+  ## DEFINITIONS for sub-schemas used in the oneAssociationRetrievalObj above              
+  inputInfo:
+    type: object
+    required:
+      - id
+      - semantic
+    ## don't know if this should be restricted to no additional properties
+#     additionalProperties: False
+    properties:
+      id:
+        description: ID namespace prefix for the query input
+        type: string
+      semantic:
+        description: Biolink entity class for the query input
+        type: string
+      ## ?? add a field (needs_prefix) to know if prefix is needed in the query?
+  outputInfo:
+    type: object
+    required:
+      - id
+      - semantic
+      - responseField
+    ## don't know if this should be restricted to no additional properties
+#     additionalProperties: False
+    properties:
+      id:
+        description: ID namespace prefix for the query output
+        type: string
+      semantic:
+        description: Biolink entity class for the query output
+        type: string
+      ## ?? add a field (is_curie) to know if the actual value is prefixed?       
+      responseField:  
+        description: >-
+          Dot-notation for the field in API/JSON response that names/identifies
+          the output biomedical entity in the association/relationship 
+        type: string
+## some required info is included in the API/JSON response, some isn't. 
+## To handle this, those fields must follow one of the following sub-schemas:
+## - staticValue: info is static, not dependent on response 
+## - takesOnResponseValue: info should take on the value of a specific field in 
+##   the API/JSON response 
+## - transformedFromResponseValue: info should be transformed from the value of 
+##   a specific field in the API/JSON response. This involves a mapping file and 
+##   code OR just code that calls services 
+  staticValue:
+    description: >-
+      Edge property is static, not dependent on response values. In this 
+      situation, a field called value is used. 
+    type: object
+    required:  
+    - value
+    ## don't know if this should be restricted to no additional properties
+#     additionalProperties: False    
+    properties:
+      value:
+        ## could be a string or an array of strings...
+        type: [string, array]
+  takesOnResponseValue:
+    description: >-
+      Edge property is dynamic and should have the value of a specific field in 
+      the API response/JSON record. In this situation, a field called 
+      responseField is used. Use dot-notation to refer to the response field. 
+    type: object
+    required:
+    - responseField  
+    ## don't know if this should be restricted to no additional properties
+#     additionalProperties: False    
+    properties:
+      responseField:
+        type: string  
+  transformedFromResponseValue:
+    ## currently assume mapping from one field only
+    ## change responseField value to an array if assumption above not true
+    description: >-
+      Edge property is dynamic but its value has to be mapped or transformed 
+      from the value of a specific field in the API response/JSON record. 
+    required:
+    - instructions
+    - responseField
+    - bteCode
+    ## don't know if this should be restricted to no additional properties
+#     additionalProperties: False    
+    properties:
+      instructions:
+        description: >-
+          describes what should be done to get the desired info, using the other
+          items in this object. Also describes the result (what is the edge 
+          property key, what is the value). 
+        type: string   
+      responseField:
+        description: dot-notation for field in API/JSON response to use.  
+        type: string   
+      mappingFile:
+        description: >-
+          github link to YAML file that contains the mapping from values in 
+          specific API/JSON responses to the desired info. Used for 
+          post-processing (see bteCode field).
+        type: string     
+      bteCode:
+        description: >-
+          github link to code that BTE uses to post-process API/JSON response 
+          (either using the mapping file or calling services) and get the info.
+        type: string     
+  transformUsingTemplate:
+  ## used by references/websites 
+    description: >-
+      Edge property is dynamic but has to be transformed from other values (API
+      response/JSON record fields or variables) using a template
+    required:
+    - instructions
+    - template
+    - templateKeys
+    - bteCode
+    ## don't know if this should be restricted to no additional properties
+#     additionalProperties: False    
+    properties:
+      instructions:
+        description: >-
+          describes what should be done to get the desired info, using the 
+          template and data (denoted using keywords). Also describes the result 
+          (what is the edge property key, what is the value). 
+        type: string   
+      template:
+        description: >-
+          the string template (Python string-formatting-like). Keywords inside 
+          curly brackets denote the parts of the template that should be 
+          replaced by the corresponding values (see templateKeys). 
+        type: string   
+      templateKeys:
+        description: >-
+          Python-dict-like. Keys are the keywords used in the template;
+          values are the API/JSON response fields or variable names that contain
+          data. The data should be used to replace the keywords in the template. 
+        type: object  
+        patternProperties:
+          .:
+            type: string      
+      bteCode:
+        description: >-
+          github link to code that BTE uses to post-process API/JSON response 
+          to get the desired info (edge property with value being an array of
+          strings). 
+        type: string  
+  conflatedNode:
+    type: object
+    required:
+      - original
+      - conflated
+    ## don't know if this should be restricted to no additional properties
+#     additionalProperties: False    
+    properties:
+      original:
+        description: >-
+          The current Biolink entity class (aka the node type) connected to this
+          edge, which is being conflated with another Biolink entity class.
+        type: string
+      conflated:
+        description: >-
+          The Biolink entity class (aka the node type) that the association is
+          rooted in from a biological point-of-view. For example, a gene-disease
+          association may really be based on altered gene products and their
+          activities; the original_type would be Gene and the conflated_type
+          would be GeneProduct.
+        type: string
+      where:
+        description: >-
+          Name of the source (API/knowledge-source) where this happened, in 
+          display format (source way of capitalizing their name, with spaces).  
+          Should match the name of a knowledge-source described in the provenance 
+          associationRetrieval field.
+        type: string  
+  staticRefObj:     
+  ## static meaning it doesn't directly depend on the value in a responseField
+    description: >-
+      Used to provide publications and website URLs for users to go to learn 
+      more about a knowledge-source, measure, context/relevance, etc. 
+    type: object
+    additionalProperties: False
+    properties:
+      publications: 
+        type: object
+        additionalProperties: False
+        patternProperties:
+        ## keys are ID namespace like pmid, pmc, doi, biorixv, medrxiv...
+        ## the values is the string ID or array of string IDs
+          .:
+            type: [string, array]
+      websites:
+      ## value is a string URL or array of string URLs
+        type: [string, array]        
+## assuming measures are like takesOnResponseValue, with some additional 
+##   static information to give information about the measure 
+## oneNumericMeasure and oneCategoryMeasure build on generalMeasure schema
+  generalMeasure:
+    type: object
+    required:
+    - name
+    - responseField
+    ## DO NOT SET additionalProperties to False, since will build on this
+    properties:
+      name:
+        description: >-
+          name the measure, starting with the name of the resource that 
+          calculated/assigned it. In display format (source way of 
+          capitalizing the names, with spaces).  
+        type: string
+      ontologyTerm:
+        description: >-
+          Term from an ontology (ideally an OWL Class) that corresponds with
+          this measure. Format is prefix:ID. 
+        type: string
+      responseField:
+        description: >-
+          The measure should have the value of a specific field in the API 
+          response/JSON record. Use dot-notation to refer to the response field.
+        type: string
+      missingValueMeaning:
+        description: >-
+          Short free-text, explaining what a missing/NULL/NA value for this 
+          measure for a specifc association/edge would mean. The assumption is 
+          that only some associations/edges have a missing value. 
+        type: string
+      measureReferences:
+      ## put the publications/websites for more info here
+        $ref: '#/definitions/staticRefObj'     
+  oneNumericMeasure:
+    description: >-
+      Numeric measures have additional required info, like range and the 
+      meaning of directions. Units may also be specified. 
+    type: object
+    allOf:
+    - $ref: '#/definitions/generalMeasure'      
+    - type: object
+      required:
+      - range
+      - directionMeaning
+      ## probably can't set additionalProperties to False 
+      properties:
+        range:
+          description: >-
+            Python-dict-like. Should define an expected lower and upper 
+            bound for values (minimum and maximum). Inclusive means the range 
+            includes the boundary number, exclusive means the range does not. 
+            Infinities are -INF and INF.
+          type: object
+          additionalProperties: False
+          properties:  ## typed this way to support infinities...
+            minExclusive:
+              type: [number, string]
+            maxExclusive:
+              type: [number, string]
+            minInclusive:
+              type: [number, string]
+            maxInclusive:
+              type: [number, string]
+        directionMeaning:
+          description: >-
+            Object (Python-dictionary-like). Each key specifies a direction 
+            (larger, closer_to_zero, more_negative, etc.). Each value specifies
+            what the direction means (more_specific, more_evidence, 
+            more_confident, more_consistent, more_probable, etc.). One may want to 
+            explain multiple directions (like when a value means something 
+            different when closer to 0, closer to the upper bound, and closer to 
+            the lower bound). 
+          type: object
+          additionalProperties: False
+          patternProperties:
+            .:
+              type: string                    
+        units: 
+        ## assuming this is the same for all measure values...
+          description: >-
+            Units for the measure values. 
+          type: string   
+  oneCategoryMeasure:
+    description: >-
+      Categorical measures have additional required info, like an enumeration of
+      the possible values. There may be an order to the category values. 
+    type: object
+    allOf:
+    - $ref: '#/definitions/generalMeasure'
+    - type: object
+      required:
+      - categories
+      ## probably can't set additionalProperties to False 
+      properties:
+        categories:
+          description: >-
+            List the possible values for the category, ordered if there is an
+            order to the values. 
+          type: array
+          items:
+            type: string
+        directionMeaning:
+          description: >-
+            Object (Python-dict-like). The key is the way to read the categories 
+            array above, forward or reverse. The value is what the direction means 
+            (more_specific, more_evidence, more_confident, more_consistent, 
+            more_probable, etc.). 
+          type: object
+          additionalProperties: False
+          patternProperties:
+            forward|reverse:
+              type: string             
+  oneContextObj:     
+    description: >-
+      Object (Python-dict-like). Keys specify the type of context. Values could 
+      be static (not dependent on response), take on a specific value in the 
+      API/JSON response, or tranformed from the value of a specific field in the 
+      API/JSON response. Ideally, the values will draw from ontologies (CURIE 
+      format) or will be short strings. 
+    type: object
+    additionalProperties: False
+    patternProperties:
+      taxonSpecific|diseaseSpecific|cohortSpecific|experimentalSpecific:
+      ## so the value will be an object fitting one of these schemas
+        oneOf:
+        - $ref: '#/definitions/staticValue'
+        - $ref: '#/definitions/takesOnResponseValue'
+        - $ref: '#/definitions/transformedFromResponseValue'
+  oneProvenanceList:
+    description: >-
+      Array of objects (Python-list-of-dict-like). Lists the sources and info
+      about them (including how they create associations). 
+    type: array
+    items:
+      $ref: '#/definitions/oneProvenanceUnit'        
+  oneProvenanceUnit:
+    type: object
+    required:
+    - name
+    - sourceType
+    additionalProperties: False
+    properties:
+      name:
+        description: >-
+          Name of the knowledge-source/API/resource. In display format (source way of 
+          capitalizing their name, with spaces). Include words like API or RDF at the
+          end of the name if those access methods were used. 
+        type: string
+      sourceType:
+        ## May eventually set as enum to require a set number of options                             
+        description: >-
+          Type of knowledge-source/API/resource. Current possible values include
+          service, knowledgebase, publications, text, clinical_database. 
+        type: string
+      version:        
+        description: >-
+          Knowledge-source/API/resource version.
+        type: string
+      versionType:
+        ## May eventually set as enum to require a set number of options                             
+        description: >-
+          There are different formats / ways of specifying what the version is. 
+          Current possible values include date_last_updated, version_number, 
+          data_from_this_date, latest_date_covered.
+        type: string
+      method:
+        ## Ideally, very similar methods have the same values. The many 
+        ##   possible options make it hard to make as an enum.        
+        description: >-
+          Keyword noting what the knowledge-source/API/resource did to
+          build the association from data/knowledge. Current possible values 
+          include ingest, NLP, manual_curation, propagate_from_phenotype, 
+          propagate_from_protein_variant, propagate_from_seq_variant, 
+          submission. 
+        type: string
+        ## manual_curation means people are trained to make these annotations 
+        ##   (aka curators) and/or submissions are REVIEWED by curators before entering KB
+        ## submission means people made these annotations but their work wasn't 
+        ##   necessarily made or reviewed by curators 
+      methodReferences:
+      ## put the publications/websites that have more info on how annotations were made
+      ##  can be what was used to set/write method, descriptiveInfo, sourceContext...
+        $ref: '#/definitions/staticRefObj'  
+      descriptiveInfo:      
+        description: >-
+          Free-text description of what the source did to create the associations.
+          Try to include enough detail that a reader would truly understand what
+          happened. 
+        type: string        
+      sourceContext:
+        description: >-
+          Python-dict-like. Used ONLY when the
+          knowledge-source/API/resource is restricted to a specific context that
+          ideally is kept in account during interpretation of its associations.
+          It could be that the knowledge-source was restricted to a specific 
+          species (taxon), disease context, experimental context (cell line info 
+          goes here), cohort, etc. 
+        $ref: '#/definitions/oneContextObj'
