@@ -19,13 +19,15 @@
         "inputs": [
           {
             "id": "UMLS",
-            "semantic": "Disease"
+            "semantic": "Disease",
+            "requiresPrefix": false
           }
         ],
         "outputs": [
           {
             "id": "NCBIGene",
             "semantic": "Gene",
+            "containsPrefix": false,
             "responseField": "disgenet.gene_related_to_disease.gene_id"
           }
         ],
@@ -71,7 +73,7 @@
         },
         "provenance": {
           "associationRetrieval": {
-            "instructions": "Map from source field value (a string) to the provenance model (an array of objects) describing what knowledge sources were involved and what methods were  used to create the associations. This mapping is stored in the provenanceMapping object inside the mappingFile JSON. Result should have provenance/associationRetrieval ->  the mapped provenance model. ",
+            "instructions": "Map from the specific association JSON-record response-value to the provenance model  (an array of objects describing sources and how they made the association). This mapping  is stored in the provenanceMapping object in the mappingFile JSON. Result is an edge  property named provenance, which has a key called associationRetrieval ->  value is one array of objects. ",
             "responseField": "disgenet.genes_related_to_disease.source",
             "mappingFile": "draft6_disgenetDGGD_mappingfile.yaml",
             "bteCode": ""

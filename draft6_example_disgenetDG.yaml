@@ -1,5 +1,6 @@
 ## example: MyDisease.info yaml, disease -> gene operation (which uses disgenet)
-## no context/relevance info 
+## corresponding schema: draft6_schema_x-bte-association-retrieval.yaml
+## no context/relevance info for this operation
 ## JSON response fields that we didn't use: year first reported (YearInitial) and year last reported (YearFinal)
 
 ## note from Kevin: object-oriented format involves putting related things together.
@@ -7,11 +8,14 @@
 ## note from Kevin: use value/responseField consistently in this 
 ## note from chunlei: try the $ notation. tried, removed, but maybe add back? 
 
-## schema notes: 2-3 needed. One for this (registry file), one for output made using this framework, 
+
+## notes: another 1 or 2 schema needed. One for output made using this framework, 
 ##               maybe one for the provenance mapping file. 
+## have a script to handle automatic updating and trigger manual review of metadata, including mapping file, when DisGeNET link updates 
+
 components:
   x-bte-association-retrieval:  ## info for this type of operation. 
-  ## each obj below describes one operation and follows one schema
+  ## each obj below describes one operation
     disease-gene1:
       queryInfo:
         supportBatch: true
@@ -26,11 +30,12 @@ components:
       inputs:  
         - id: UMLS
           semantic: Disease
-          ## ?? add a field (requires_prefix) to know if prefix is needed in the query?
+          ## ?? need to check pre-processing code to check if this is right
+          requiresPrefix: false
       outputs:    
         - id: NCBIGene
           semantic: Gene  
-          ## ?? add a field (is_curie) to know if responseField's value has a prefix?
+          containsPrefix: false
           responseField: "disgenet.gene_related_to_disease.gene_id"
       ## WHAT the relationship is                    
       predicateInfo:  
@@ -43,7 +48,7 @@ components:
           value: "SIO:001403"  ## same as TRAPI/biolink relation field
         label: 
           value: "SIO:is_associated_with"
-        nodesConflated:  ## optional field, currently assuming it doesn't depend on response
+        nodesConflated:  ## optional field
         ## DisGeNET disease-gene relationships conflate diseases/phenotypes and genes/gene-products      
         - original: Disease
           conflated: PhenotypicFeature
@@ -53,11 +58,12 @@ components:
           where: DisGeNET   
       references:  ## IMPORTANT: users use this as evidence 
         publications:
-        ## each key is an ID namespace, the value follows schema to describe how to get the
-        ##   publication IDs from API response/JSON record 
+        ## each key is an ID namespace
+        ## for this example, the PMIDs come from the JSON response field  
+        ##   see the schema for the other situations and their schema. 
           pmid: 
             responseField: "disgenet.genes_related_to_disease.pubmed"  
-        websites:   ## follows a schema describing how to get this info from a template
+        websites:   
           instructions: >-
             Create an array of webpage URLs that follow the template. There should be a 
             separate URL for each disease ID (element of disease). Each JSON record
@@ -73,21 +79,20 @@ components:
           bteCode: ""  
           ## link to the github BTE file where we post process to build this
       provenance:  
-      ## organized this way because there can be provenance for other things like ARA scoring/overlay. 
+      ## organized this way because there can be provenance for later operations like scoring/overlay 
         associationRetrieval: 
           ## currently involves a good amount of processing/mapping values from response fields. 
-          ## This is an issue with every API/knowledge-source since there isn't standardization 
-          ##   on provenance with enough detailed info on how the associations were made 
+          ## This is an issue with APIs/knowledge-sources that aggregate info from many other sources. 
           instructions: >- 
-            Map from source field value (a string) to the provenance model (an array of objects)
-            describing what knowledge sources were involved and what methods were 
-            used to create the associations. This mapping is stored in the provenanceMapping object
-            inside the mappingFile JSON. Result should have provenance/associationRetrieval -> 
-            the mapped provenance model. 
+            Map from the specific association JSON-record response-value to the provenance model 
+            (an array of objects describing sources and how they made the association). This mapping 
+            is stored in the provenanceMapping object in the mappingFile JSON. Result is an edge 
+            property named provenance, which has a key called associationRetrieval -> 
+            value is one array of objects. 
           ## currently assuming only one field used. Need to change schema if this changes. 
           responseField: "disgenet.genes_related_to_disease.source"
           mappingFile: "draft6_disgenetDGGD_mappingfile.yaml"  
-          ## can process this mapping_file to get simple "source" info for metaKG
+          ## could use mappingFile to get source info for metaKG
           bteCode: ""  
           ## link to the github BTE file where we post process to build this
       numericMeasures:

@@ -22,12 +22,24 @@
               "additionalProperties": false,
               "properties": {
                 "queryInfo": {
+                  "description": "Object that contains info on the query (API call) for this operation.  The OpenAPI /paths/operations may have specific fields  (like parameters, responseBody, etc.), and these can be set here. ",
                   "type": "object",
                   "required": [
                     "supportBatch"
                   ],
-                  "supportBatch": {
-                    "type": "boolean"
+                  "properties": {
+                    "supportBatch": {
+                      "type": "boolean"
+                    },
+                    "inputSeparator": {
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "type": "object"
+                    },
+                    "requestBody": {
+                      "type": "object"
+                    }
                   }
                 },
                 "inputs": {
@@ -39,6 +51,7 @@
                       "id",
                       "semantic"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                       "id": {
                         "description": "ID namespace prefix for the query input",
@@ -47,6 +60,11 @@
                       "semantic": {
                         "description": "Biolink entity class for the query input",
                         "type": "string"
+                      },
+                      "requiresPrefix": {
+                        "description": "Whether the API expects IDs to be curies (have prefixes included)  or not",
+                        "type": "boolean",
+                        "default": false
                       }
                     }
                   }
@@ -61,6 +79,7 @@
                       "semantic",
                       "responseField"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                       "id": {
                         "description": "ID namespace prefix for the query output",
@@ -73,6 +92,11 @@
                       "responseField": {
                         "description": "Dot-notation for the field in API/JSON response that names/identifies the output biomedical entity in the association/relationship ",
                         "type": "string"
+                      },
+                      "containsPrefix": {
+                        "description": "Whether the API responseField values are curies (have prefixes included)  or not",
+                        "type": "boolean",
+                        "default": false
                       }
                     }
                   }
@@ -85,7 +109,6 @@
                   "additionalProperties": false,
                   "properties": {
                     "biolink": {
-                      "description": "Biolink relation that best describes the association. Similar to  the predicate field in a TRAPI (Q)Edge. ",
                       "oneOf": [
                         {
                           "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
@@ -95,9 +118,16 @@
                           ],
                           "properties": {
                             "value": {
-                              "type": [
-                                "string",
-                                "array"
+                              "oneOf": [
+                                {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                {
+                                  "type": "string"
+                                }
                               ]
                             }
                           }
@@ -143,7 +173,6 @@
                       ]
                     },
                     "id": {
-                      "description": "Relation (OWL ObjectProperty) that best describes the association.  Formatted as a CURIE with prefix:ID. May be assigned by Translator team member or may be in the original information. Similar to the  relation field in a TRAPI (Q)Edge.",
                       "oneOf": [
                         {
                           "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
@@ -153,9 +182,16 @@
                           ],
                           "properties": {
                             "value": {
-                              "type": [
-                                "string",
-                                "array"
+                              "oneOf": [
+                                {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                {
+                                  "type": "string"
+                                }
                               ]
                             }
                           }
@@ -201,7 +237,6 @@
                       ]
                     },
                     "label": {
-                      "description": "Human-readable label for id field above. ",
                       "oneOf": [
                         {
                           "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
@@ -211,9 +246,16 @@
                           ],
                           "properties": {
                             "value": {
-                              "type": [
-                                "string",
-                                "array"
+                              "oneOf": [
+                                {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                {
+                                  "type": "string"
+                                }
                               ]
                             }
                           }
@@ -410,7 +452,7 @@
                                 "type": "string"
                               },
                               "methodReferences": {
-                                "description": "Used to provide publications and website URLs for users to go to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+                                "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
                                 "type": "object",
                                 "additionalProperties": false,
                                 "properties": {
@@ -419,17 +461,31 @@
                                     "additionalProperties": false,
                                     "patternProperties": {
                                       ".": {
-                                        "type": [
-                                          "string",
-                                          "array"
+                                        "oneOf": [
+                                          {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          {
+                                            "type": "string"
+                                          }
                                         ]
                                       }
                                     }
                                   },
                                   "websites": {
-                                    "type": [
-                                      "string",
-                                      "array"
+                                    "oneOf": [
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
                                     ]
                                   }
                                 }
@@ -439,7 +495,7 @@
                                 "type": "string"
                               },
                               "sourceContext": {
-                                "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings. ",
+                                "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
                                 "type": "object",
                                 "additionalProperties": false,
                                 "patternProperties": {
@@ -453,9 +509,16 @@
                                         ],
                                         "properties": {
                                           "value": {
-                                            "type": [
-                                              "string",
-                                              "array"
+                                            "oneOf": [
+                                              {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              {
+                                                "type": "string"
+                                              }
                                             ]
                                           }
                                         }
@@ -539,8 +602,6 @@
                   "description": "Array of objects (Python-list-of-dict-like), gives info about  the measure and what response field to use to retrieve it. ",
                   "type": "array",
                   "items": {
-                    "description": "Numeric measures have additional required info, like range and the  meaning of directions. Units may also be specified. ",
-                    "type": "object",
                     "allOf": [
                       {
                         "type": "object",
@@ -550,7 +611,7 @@
                         ],
                         "properties": {
                           "name": {
-                            "description": "name the measure, starting with the name of the resource that  calculated/assigned it. In display format (source way of  capitalizing the names, with spaces).  ",
+                            "description": "Name of the measure (include the name of the resource that calculated it).  In display format (source way of capitalizing the names, with spaces).  ",
                             "type": "string"
                           },
                           "ontologyTerm": {
@@ -558,15 +619,15 @@
                             "type": "string"
                           },
                           "responseField": {
-                            "description": "The measure should have the value of a specific field in the API  response/JSON record. Use dot-notation to refer to the response field.",
+                            "description": "The measure value is in a specific field in the API response/JSON record.  Use dot-notation to refer to the response field.",
                             "type": "string"
                           },
                           "missingValueMeaning": {
-                            "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
+                            "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure, for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
                             "type": "string"
                           },
                           "measureReferences": {
-                            "description": "Used to provide publications and website URLs for users to go to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+                            "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
                             "type": "object",
                             "additionalProperties": false,
                             "properties": {
@@ -575,17 +636,31 @@
                                 "additionalProperties": false,
                                 "patternProperties": {
                                   ".": {
-                                    "type": [
-                                      "string",
-                                      "array"
+                                    "oneOf": [
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
                                     ]
                                   }
                                 }
                               },
                               "websites": {
-                                "type": [
-                                  "string",
-                                  "array"
+                                "oneOf": [
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
                                 ]
                               }
                             }
@@ -600,33 +675,39 @@
                         ],
                         "properties": {
                           "range": {
-                            "description": "Python-dict-like. Should define an expected lower and upper  bound for values (minimum and maximum). Inclusive means the range  includes the boundary number, exclusive means the range does not.  Infinities are -INF and INF.",
+                            "description": "Python-dict-like. Should define an expected lower and/or upper  bound for values (minimum and maximum). Inclusive means the range  includes the boundary number, exclusive means the range does not.  If the actual lower-bound of the value is negative-infinity and/or the actual upper bound of the value is positive-infinity, do not set a bound. ",
                             "type": "object",
+                            "not": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "required": [
+                                    "minExclusive",
+                                    "minInclusive"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "required": [
+                                    "maxExclusive",
+                                    "maxInclusive"
+                                  ]
+                                }
+                              ]
+                            },
                             "additionalProperties": false,
                             "properties": {
                               "minExclusive": {
-                                "type": [
-                                  "number",
-                                  "string"
-                                ]
+                                "type": "number"
                               },
                               "maxExclusive": {
-                                "type": [
-                                  "number",
-                                  "string"
-                                ]
+                                "type": "number"
                               },
                               "minInclusive": {
-                                "type": [
-                                  "number",
-                                  "string"
-                                ]
+                                "type": "number"
                               },
                               "maxInclusive": {
-                                "type": [
-                                  "number",
-                                  "string"
-                                ]
+                                "type": "number"
                               }
                             }
                           },
@@ -653,8 +734,6 @@
                   "description": "Array of objects (Python-list-of-dict-like), gives info about  the measure and what response field to use to retrieve it. ",
                   "type": "array",
                   "items": {
-                    "description": "Categorical measures have additional required info, like an enumeration of the possible values. There may be an order to the category values. ",
-                    "type": "object",
                     "allOf": [
                       {
                         "type": "object",
@@ -664,7 +743,7 @@
                         ],
                         "properties": {
                           "name": {
-                            "description": "name the measure, starting with the name of the resource that  calculated/assigned it. In display format (source way of  capitalizing the names, with spaces).  ",
+                            "description": "Name of the measure (include the name of the resource that calculated it).  In display format (source way of capitalizing the names, with spaces).  ",
                             "type": "string"
                           },
                           "ontologyTerm": {
@@ -672,15 +751,15 @@
                             "type": "string"
                           },
                           "responseField": {
-                            "description": "The measure should have the value of a specific field in the API  response/JSON record. Use dot-notation to refer to the response field.",
+                            "description": "The measure value is in a specific field in the API response/JSON record.  Use dot-notation to refer to the response field.",
                             "type": "string"
                           },
                           "missingValueMeaning": {
-                            "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
+                            "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure, for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
                             "type": "string"
                           },
                           "measureReferences": {
-                            "description": "Used to provide publications and website URLs for users to go to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+                            "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
                             "type": "object",
                             "additionalProperties": false,
                             "properties": {
@@ -689,17 +768,31 @@
                                 "additionalProperties": false,
                                 "patternProperties": {
                                   ".": {
-                                    "type": [
-                                      "string",
-                                      "array"
+                                    "oneOf": [
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
                                     ]
                                   }
                                 }
                               },
                               "websites": {
-                                "type": [
-                                  "string",
-                                  "array"
+                                "oneOf": [
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
                                 ]
                               }
                             }
@@ -735,11 +828,11 @@
                   }
                 },
                 "contextRelevance": {
-                  "description": "Groups together context/relevance related to this association.",
+                  "description": "Groups together context/relevance related to this specific association.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed. ",
                   "type": "object",
                   "properties": {
                     "associationRetrieval": {
-                      "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings. ",
+                      "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
                       "type": "object",
                       "additionalProperties": false,
                       "patternProperties": {
@@ -753,9 +846,16 @@
                               ],
                               "properties": {
                                 "value": {
-                                  "type": [
-                                    "string",
-                                    "array"
+                                  "oneOf": [
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
                                   ]
                                 }
                               }
@@ -825,12 +925,24 @@
       "additionalProperties": false,
       "properties": {
         "queryInfo": {
+          "description": "Object that contains info on the query (API call) for this operation.  The OpenAPI /paths/operations may have specific fields  (like parameters, responseBody, etc.), and these can be set here. ",
           "type": "object",
           "required": [
             "supportBatch"
           ],
-          "supportBatch": {
-            "type": "boolean"
+          "properties": {
+            "supportBatch": {
+              "type": "boolean"
+            },
+            "inputSeparator": {
+              "type": "string"
+            },
+            "parameters": {
+              "type": "object"
+            },
+            "requestBody": {
+              "type": "object"
+            }
           }
         },
         "inputs": {
@@ -842,6 +954,7 @@
               "id",
               "semantic"
             ],
+            "additionalProperties": false,
             "properties": {
               "id": {
                 "description": "ID namespace prefix for the query input",
@@ -850,6 +963,11 @@
               "semantic": {
                 "description": "Biolink entity class for the query input",
                 "type": "string"
+              },
+              "requiresPrefix": {
+                "description": "Whether the API expects IDs to be curies (have prefixes included)  or not",
+                "type": "boolean",
+                "default": false
               }
             }
           }
@@ -864,6 +982,7 @@
               "semantic",
               "responseField"
             ],
+            "additionalProperties": false,
             "properties": {
               "id": {
                 "description": "ID namespace prefix for the query output",
@@ -876,6 +995,11 @@
               "responseField": {
                 "description": "Dot-notation for the field in API/JSON response that names/identifies the output biomedical entity in the association/relationship ",
                 "type": "string"
+              },
+              "containsPrefix": {
+                "description": "Whether the API responseField values are curies (have prefixes included)  or not",
+                "type": "boolean",
+                "default": false
               }
             }
           }
@@ -888,7 +1012,6 @@
           "additionalProperties": false,
           "properties": {
             "biolink": {
-              "description": "Biolink relation that best describes the association. Similar to  the predicate field in a TRAPI (Q)Edge. ",
               "oneOf": [
                 {
                   "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
@@ -898,9 +1021,16 @@
                   ],
                   "properties": {
                     "value": {
-                      "type": [
-                        "string",
-                        "array"
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "string"
+                        }
                       ]
                     }
                   }
@@ -946,7 +1076,6 @@
               ]
             },
             "id": {
-              "description": "Relation (OWL ObjectProperty) that best describes the association.  Formatted as a CURIE with prefix:ID. May be assigned by Translator team member or may be in the original information. Similar to the  relation field in a TRAPI (Q)Edge.",
               "oneOf": [
                 {
                   "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
@@ -956,9 +1085,16 @@
                   ],
                   "properties": {
                     "value": {
-                      "type": [
-                        "string",
-                        "array"
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "string"
+                        }
                       ]
                     }
                   }
@@ -1004,7 +1140,6 @@
               ]
             },
             "label": {
-              "description": "Human-readable label for id field above. ",
               "oneOf": [
                 {
                   "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
@@ -1014,9 +1149,16 @@
                   ],
                   "properties": {
                     "value": {
-                      "type": [
-                        "string",
-                        "array"
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "string"
+                        }
                       ]
                     }
                   }
@@ -1213,7 +1355,7 @@
                         "type": "string"
                       },
                       "methodReferences": {
-                        "description": "Used to provide publications and website URLs for users to go to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+                        "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
                         "type": "object",
                         "additionalProperties": false,
                         "properties": {
@@ -1222,17 +1364,31 @@
                             "additionalProperties": false,
                             "patternProperties": {
                               ".": {
-                                "type": [
-                                  "string",
-                                  "array"
+                                "oneOf": [
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
                                 ]
                               }
                             }
                           },
                           "websites": {
-                            "type": [
-                              "string",
-                              "array"
+                            "oneOf": [
+                              {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              {
+                                "type": "string"
+                              }
                             ]
                           }
                         }
@@ -1242,7 +1398,7 @@
                         "type": "string"
                       },
                       "sourceContext": {
-                        "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings. ",
+                        "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
                         "type": "object",
                         "additionalProperties": false,
                         "patternProperties": {
@@ -1256,9 +1412,16 @@
                                 ],
                                 "properties": {
                                   "value": {
-                                    "type": [
-                                      "string",
-                                      "array"
+                                    "oneOf": [
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
                                     ]
                                   }
                                 }
@@ -1342,8 +1505,6 @@
           "description": "Array of objects (Python-list-of-dict-like), gives info about  the measure and what response field to use to retrieve it. ",
           "type": "array",
           "items": {
-            "description": "Numeric measures have additional required info, like range and the  meaning of directions. Units may also be specified. ",
-            "type": "object",
             "allOf": [
               {
                 "type": "object",
@@ -1353,7 +1514,7 @@
                 ],
                 "properties": {
                   "name": {
-                    "description": "name the measure, starting with the name of the resource that  calculated/assigned it. In display format (source way of  capitalizing the names, with spaces).  ",
+                    "description": "Name of the measure (include the name of the resource that calculated it).  In display format (source way of capitalizing the names, with spaces).  ",
                     "type": "string"
                   },
                   "ontologyTerm": {
@@ -1361,15 +1522,15 @@
                     "type": "string"
                   },
                   "responseField": {
-                    "description": "The measure should have the value of a specific field in the API  response/JSON record. Use dot-notation to refer to the response field.",
+                    "description": "The measure value is in a specific field in the API response/JSON record.  Use dot-notation to refer to the response field.",
                     "type": "string"
                   },
                   "missingValueMeaning": {
-                    "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
+                    "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure, for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
                     "type": "string"
                   },
                   "measureReferences": {
-                    "description": "Used to provide publications and website URLs for users to go to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+                    "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
@@ -1378,17 +1539,31 @@
                         "additionalProperties": false,
                         "patternProperties": {
                           ".": {
-                            "type": [
-                              "string",
-                              "array"
+                            "oneOf": [
+                              {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              {
+                                "type": "string"
+                              }
                             ]
                           }
                         }
                       },
                       "websites": {
-                        "type": [
-                          "string",
-                          "array"
+                        "oneOf": [
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "type": "string"
+                          }
                         ]
                       }
                     }
@@ -1403,33 +1578,39 @@
                 ],
                 "properties": {
                   "range": {
-                    "description": "Python-dict-like. Should define an expected lower and upper  bound for values (minimum and maximum). Inclusive means the range  includes the boundary number, exclusive means the range does not.  Infinities are -INF and INF.",
+                    "description": "Python-dict-like. Should define an expected lower and/or upper  bound for values (minimum and maximum). Inclusive means the range  includes the boundary number, exclusive means the range does not.  If the actual lower-bound of the value is negative-infinity and/or the actual upper bound of the value is positive-infinity, do not set a bound. ",
                     "type": "object",
+                    "not": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "minExclusive",
+                            "minInclusive"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "maxExclusive",
+                            "maxInclusive"
+                          ]
+                        }
+                      ]
+                    },
                     "additionalProperties": false,
                     "properties": {
                       "minExclusive": {
-                        "type": [
-                          "number",
-                          "string"
-                        ]
+                        "type": "number"
                       },
                       "maxExclusive": {
-                        "type": [
-                          "number",
-                          "string"
-                        ]
+                        "type": "number"
                       },
                       "minInclusive": {
-                        "type": [
-                          "number",
-                          "string"
-                        ]
+                        "type": "number"
                       },
                       "maxInclusive": {
-                        "type": [
-                          "number",
-                          "string"
-                        ]
+                        "type": "number"
                       }
                     }
                   },
@@ -1456,8 +1637,6 @@
           "description": "Array of objects (Python-list-of-dict-like), gives info about  the measure and what response field to use to retrieve it. ",
           "type": "array",
           "items": {
-            "description": "Categorical measures have additional required info, like an enumeration of the possible values. There may be an order to the category values. ",
-            "type": "object",
             "allOf": [
               {
                 "type": "object",
@@ -1467,7 +1646,7 @@
                 ],
                 "properties": {
                   "name": {
-                    "description": "name the measure, starting with the name of the resource that  calculated/assigned it. In display format (source way of  capitalizing the names, with spaces).  ",
+                    "description": "Name of the measure (include the name of the resource that calculated it).  In display format (source way of capitalizing the names, with spaces).  ",
                     "type": "string"
                   },
                   "ontologyTerm": {
@@ -1475,15 +1654,15 @@
                     "type": "string"
                   },
                   "responseField": {
-                    "description": "The measure should have the value of a specific field in the API  response/JSON record. Use dot-notation to refer to the response field.",
+                    "description": "The measure value is in a specific field in the API response/JSON record.  Use dot-notation to refer to the response field.",
                     "type": "string"
                   },
                   "missingValueMeaning": {
-                    "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
+                    "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure, for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
                     "type": "string"
                   },
                   "measureReferences": {
-                    "description": "Used to provide publications and website URLs for users to go to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+                    "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
@@ -1492,17 +1671,31 @@
                         "additionalProperties": false,
                         "patternProperties": {
                           ".": {
-                            "type": [
-                              "string",
-                              "array"
+                            "oneOf": [
+                              {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              {
+                                "type": "string"
+                              }
                             ]
                           }
                         }
                       },
                       "websites": {
-                        "type": [
-                          "string",
-                          "array"
+                        "oneOf": [
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "type": "string"
+                          }
                         ]
                       }
                     }
@@ -1538,11 +1731,11 @@
           }
         },
         "contextRelevance": {
-          "description": "Groups together context/relevance related to this association.",
+          "description": "Groups together context/relevance related to this specific association.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed. ",
           "type": "object",
           "properties": {
             "associationRetrieval": {
-              "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings. ",
+              "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
               "type": "object",
               "additionalProperties": false,
               "patternProperties": {
@@ -1556,9 +1749,16 @@
                       ],
                       "properties": {
                         "value": {
-                          "type": [
-                            "string",
-                            "array"
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            {
+                              "type": "string"
+                            }
                           ]
                         }
                       }
@@ -1615,6 +1815,7 @@
         "id",
         "semantic"
       ],
+      "additionalProperties": false,
       "properties": {
         "id": {
           "description": "ID namespace prefix for the query input",
@@ -1623,6 +1824,11 @@
         "semantic": {
           "description": "Biolink entity class for the query input",
           "type": "string"
+        },
+        "requiresPrefix": {
+          "description": "Whether the API expects IDs to be curies (have prefixes included)  or not",
+          "type": "boolean",
+          "default": false
         }
       }
     },
@@ -1633,6 +1839,7 @@
         "semantic",
         "responseField"
       ],
+      "additionalProperties": false,
       "properties": {
         "id": {
           "description": "ID namespace prefix for the query output",
@@ -1645,8 +1852,26 @@
         "responseField": {
           "description": "Dot-notation for the field in API/JSON response that names/identifies the output biomedical entity in the association/relationship ",
           "type": "string"
+        },
+        "containsPrefix": {
+          "description": "Whether the API responseField values are curies (have prefixes included)  or not",
+          "type": "boolean",
+          "default": false
         }
       }
+    },
+    "stringOrArrayOfStrings": {
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ]
     },
     "staticValue": {
       "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
@@ -1656,9 +1881,16 @@
       ],
       "properties": {
         "value": {
-          "type": [
-            "string",
-            "array"
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "string"
+            }
           ]
         }
       }
@@ -1755,7 +1987,7 @@
       }
     },
     "staticRefObj": {
-      "description": "Used to provide publications and website URLs for users to go to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+      "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -1764,17 +1996,31 @@
           "additionalProperties": false,
           "patternProperties": {
             ".": {
-              "type": [
-                "string",
-                "array"
+              "oneOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "string"
+                }
               ]
             }
           }
         },
         "websites": {
-          "type": [
-            "string",
-            "array"
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "string"
+            }
           ]
         }
       }
@@ -1787,7 +2033,7 @@
       ],
       "properties": {
         "name": {
-          "description": "name the measure, starting with the name of the resource that  calculated/assigned it. In display format (source way of  capitalizing the names, with spaces).  ",
+          "description": "Name of the measure (include the name of the resource that calculated it).  In display format (source way of capitalizing the names, with spaces).  ",
           "type": "string"
         },
         "ontologyTerm": {
@@ -1795,15 +2041,15 @@
           "type": "string"
         },
         "responseField": {
-          "description": "The measure should have the value of a specific field in the API  response/JSON record. Use dot-notation to refer to the response field.",
+          "description": "The measure value is in a specific field in the API response/JSON record.  Use dot-notation to refer to the response field.",
           "type": "string"
         },
         "missingValueMeaning": {
-          "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
+          "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure, for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
           "type": "string"
         },
         "measureReferences": {
-          "description": "Used to provide publications and website URLs for users to go to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+          "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -1812,17 +2058,31 @@
               "additionalProperties": false,
               "patternProperties": {
                 ".": {
-                  "type": [
-                    "string",
-                    "array"
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "type": "string"
+                    }
                   ]
                 }
               }
             },
             "websites": {
-              "type": [
-                "string",
-                "array"
+              "oneOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "string"
+                }
               ]
             }
           }
@@ -1830,8 +2090,6 @@
       }
     },
     "oneNumericMeasure": {
-      "description": "Numeric measures have additional required info, like range and the  meaning of directions. Units may also be specified. ",
-      "type": "object",
       "allOf": [
         {
           "type": "object",
@@ -1841,7 +2099,7 @@
           ],
           "properties": {
             "name": {
-              "description": "name the measure, starting with the name of the resource that  calculated/assigned it. In display format (source way of  capitalizing the names, with spaces).  ",
+              "description": "Name of the measure (include the name of the resource that calculated it).  In display format (source way of capitalizing the names, with spaces).  ",
               "type": "string"
             },
             "ontologyTerm": {
@@ -1849,15 +2107,15 @@
               "type": "string"
             },
             "responseField": {
-              "description": "The measure should have the value of a specific field in the API  response/JSON record. Use dot-notation to refer to the response field.",
+              "description": "The measure value is in a specific field in the API response/JSON record.  Use dot-notation to refer to the response field.",
               "type": "string"
             },
             "missingValueMeaning": {
-              "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
+              "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure, for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
               "type": "string"
             },
             "measureReferences": {
-              "description": "Used to provide publications and website URLs for users to go to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+              "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
               "type": "object",
               "additionalProperties": false,
               "properties": {
@@ -1866,17 +2124,31 @@
                   "additionalProperties": false,
                   "patternProperties": {
                     ".": {
-                      "type": [
-                        "string",
-                        "array"
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "string"
+                        }
                       ]
                     }
                   }
                 },
                 "websites": {
-                  "type": [
-                    "string",
-                    "array"
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "type": "string"
+                    }
                   ]
                 }
               }
@@ -1891,33 +2163,39 @@
           ],
           "properties": {
             "range": {
-              "description": "Python-dict-like. Should define an expected lower and upper  bound for values (minimum and maximum). Inclusive means the range  includes the boundary number, exclusive means the range does not.  Infinities are -INF and INF.",
+              "description": "Python-dict-like. Should define an expected lower and/or upper  bound for values (minimum and maximum). Inclusive means the range  includes the boundary number, exclusive means the range does not.  If the actual lower-bound of the value is negative-infinity and/or the actual upper bound of the value is positive-infinity, do not set a bound. ",
               "type": "object",
+              "not": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "minExclusive",
+                      "minInclusive"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "maxExclusive",
+                      "maxInclusive"
+                    ]
+                  }
+                ]
+              },
               "additionalProperties": false,
               "properties": {
                 "minExclusive": {
-                  "type": [
-                    "number",
-                    "string"
-                  ]
+                  "type": "number"
                 },
                 "maxExclusive": {
-                  "type": [
-                    "number",
-                    "string"
-                  ]
+                  "type": "number"
                 },
                 "minInclusive": {
-                  "type": [
-                    "number",
-                    "string"
-                  ]
+                  "type": "number"
                 },
                 "maxInclusive": {
-                  "type": [
-                    "number",
-                    "string"
-                  ]
+                  "type": "number"
                 }
               }
             },
@@ -1940,8 +2218,6 @@
       ]
     },
     "oneCategoryMeasure": {
-      "description": "Categorical measures have additional required info, like an enumeration of the possible values. There may be an order to the category values. ",
-      "type": "object",
       "allOf": [
         {
           "type": "object",
@@ -1951,7 +2227,7 @@
           ],
           "properties": {
             "name": {
-              "description": "name the measure, starting with the name of the resource that  calculated/assigned it. In display format (source way of  capitalizing the names, with spaces).  ",
+              "description": "Name of the measure (include the name of the resource that calculated it).  In display format (source way of capitalizing the names, with spaces).  ",
               "type": "string"
             },
             "ontologyTerm": {
@@ -1959,15 +2235,15 @@
               "type": "string"
             },
             "responseField": {
-              "description": "The measure should have the value of a specific field in the API  response/JSON record. Use dot-notation to refer to the response field.",
+              "description": "The measure value is in a specific field in the API response/JSON record.  Use dot-notation to refer to the response field.",
               "type": "string"
             },
             "missingValueMeaning": {
-              "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
+              "description": "Short free-text, explaining what a missing/NULL/NA value for this  measure, for a specifc association/edge would mean. The assumption is  that only some associations/edges have a missing value. ",
               "type": "string"
             },
             "measureReferences": {
-              "description": "Used to provide publications and website URLs for users to go to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+              "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
               "type": "object",
               "additionalProperties": false,
               "properties": {
@@ -1976,17 +2252,31 @@
                   "additionalProperties": false,
                   "patternProperties": {
                     ".": {
-                      "type": [
-                        "string",
-                        "array"
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "string"
+                        }
                       ]
                     }
                   }
                 },
                 "websites": {
-                  "type": [
-                    "string",
-                    "array"
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "type": "string"
+                    }
                   ]
                 }
               }
@@ -2021,7 +2311,7 @@
       ]
     },
     "oneContextObj": {
-      "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings. ",
+      "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
       "type": "object",
       "additionalProperties": false,
       "patternProperties": {
@@ -2035,9 +2325,16 @@
               ],
               "properties": {
                 "value": {
-                  "type": [
-                    "string",
-                    "array"
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "type": "string"
+                    }
                   ]
                 }
               }
@@ -2116,7 +2413,7 @@
             "type": "string"
           },
           "methodReferences": {
-            "description": "Used to provide publications and website URLs for users to go to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+            "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
             "type": "object",
             "additionalProperties": false,
             "properties": {
@@ -2125,17 +2422,31 @@
                 "additionalProperties": false,
                 "patternProperties": {
                   ".": {
-                    "type": [
-                      "string",
-                      "array"
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      {
+                        "type": "string"
+                      }
                     ]
                   }
                 }
               },
               "websites": {
-                "type": [
-                  "string",
-                  "array"
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "string"
+                  }
                 ]
               }
             }
@@ -2145,7 +2456,7 @@
             "type": "string"
           },
           "sourceContext": {
-            "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings. ",
+            "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
             "type": "object",
             "additionalProperties": false,
             "patternProperties": {
@@ -2159,9 +2470,16 @@
                     ],
                     "properties": {
                       "value": {
-                        "type": [
-                          "string",
-                          "array"
+                        "oneOf": [
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "type": "string"
+                          }
                         ]
                       }
                     }
@@ -2240,7 +2558,7 @@
           "type": "string"
         },
         "methodReferences": {
-          "description": "Used to provide publications and website URLs for users to go to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+          "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -2249,17 +2567,31 @@
               "additionalProperties": false,
               "patternProperties": {
                 ".": {
-                  "type": [
-                    "string",
-                    "array"
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "type": "string"
+                    }
                   ]
                 }
               }
             },
             "websites": {
-              "type": [
-                "string",
-                "array"
+              "oneOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "string"
+                }
               ]
             }
           }
@@ -2269,7 +2601,7 @@
           "type": "string"
         },
         "sourceContext": {
-          "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings. ",
+          "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
           "type": "object",
           "additionalProperties": false,
           "patternProperties": {
@@ -2283,9 +2615,16 @@
                   ],
                   "properties": {
                     "value": {
-                      "type": [
-                        "string",
-                        "array"
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "string"
+                        }
                       ]
                     }
                   }
