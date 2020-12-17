@@ -1,19 +1,21 @@
-## example: MyDisease.info yaml, disease -> gene operation (which uses disgenet)
-## corresponding schema: draft6_schema_x-bte-association-retrieval.yaml
-## no context/relevance info for this operation
-## JSON response fields that we didn't use: year first reported (YearInitial) and year last reported (YearFinal)
+## example of using the x-bte-association-retrieval schema (draft6_schema_x-bte-association-retrieval.yaml)
+##   to write a registry entry for MyDisease.info yaml, disease -> gene operation (which uses disgenet)
+## notes about this specific registry entry/operation: 
+##   no context/relevance info needed 
+##   JSON response fields that we didn't use: year first reported (YearInitial) and year last reported (YearFinal)
 
+## notes for CX:
+##   this can be a new metadata extension, so it doesn't rewrite and break x-bte-kgs-association dependent code
+##   there is likely 1+ other schema/examples to write. One for what the association/edge looks like after using this registry entry to structure and add info, one for the provenance mapping file?  
+## future?: have a script to handle automatic updating and trigger manual review of metadata, including mapping file, when DisGeNET link updates. Kevin notes that a complex script to figure out exactly what needs to be reviewed would be hard. 
+
+## old advice on what this file looks like 
 ## note from Kevin: object-oriented format involves putting related things together.
 ##   can always unpack objects later and parse to make a table w/ columns/edge properties. 
 ## note from Kevin: use value/responseField consistently in this 
 ## note from chunlei: try the $ notation. tried, removed, but maybe add back? 
 
-
-## notes: another 1 or 2 schema needed. One for output made using this framework, 
-##               maybe one for the provenance mapping file. 
-## have a script to handle automatic updating and trigger manual review of metadata, including mapping file, when DisGeNET link updates 
-
-components:
+components:        
   x-bte-association-retrieval:  ## info for this type of operation. 
   ## each obj below describes one operation
     disease-gene1:
@@ -70,7 +72,7 @@ components:
             should have one source and one gene_id (aka no need for separate URLs). 
             Result is an edge property named websites -> value is this array of strings. 
           template: >-
-            https://www.disgenet.org/browser/0/1/0/{disease}/geneid__{gene}-source__{source}/ 
+            https://www.disgenet.org/browser/0/1/1/{disease}/geneid__{gene}-source__{source}/ 
           templateKeys:  ## map the template fields above to response fields or to variables
             source: "disgenet.genes_related_to_disease.source"
             gene: "disgenet.genes_related_to_disease.gene_id"
@@ -100,7 +102,8 @@ components:
       - name: "DisGeNET gene-disease association score"
         responseField: "disgenet.genes_related_to_disease.score"
         measureReferences:
-          websites: "https://www.disgenet.org/dbinfo#section31"
+          websites: 
+            value: "https://www.disgenet.org/dbinfo#section31"
         range:
           minExclusive: 0
           maxInclusive: 1
@@ -109,7 +112,8 @@ components:
       - name: "DisGeNET evidence index"
         responseField: "disgenet.genes_related_to_disease.EI"
         measureReferences:
-          websites: "https://www.disgenet.org/dbinfo#section36"
+          websites: 
+            value: "https://www.disgenet.org/dbinfo#section36"
         missingValueMeaning: >-
           This measure is calculated from BeFree and PsyGeNET info. 
           If the association was not found in those sources, this 
@@ -123,7 +127,8 @@ components:
         ontologyTerm: 'SIO:001351'
         responseField: "disgenet.genes_related_to_disease.DSI"
         measureReferences:
-          websites: "https://www.disgenet.org/dbinfo#section33"   
+          websites: 
+            value: "https://www.disgenet.org/dbinfo#section33"   
         missingValueMeaning: >-
           This measure is calculated when a gene is associated with 
           one or more diseases. If the value is missing, this gene is 
@@ -137,7 +142,8 @@ components:
         ontologyTerm: 'SIO:001352'
         responseField: "disgenet.genes_related_to_disease.DPI"
         measureReferences:
-          websites: "https://www.disgenet.org/dbinfo#section34"    
+          websites: 
+            value: "https://www.disgenet.org/dbinfo#section34"    
         missingValueMeaning: >-
           This measure is calculated when a gene is associated with 
           one or more diseases in MeSH disease classes. If the value 

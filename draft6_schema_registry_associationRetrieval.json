@@ -1,6 +1,6 @@
 {
   "title": "Schema for objects within x-bte-association-retrieval",
-  "$schema": "http://json-schema.org/draft-04/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "description": "Describes the operations that retrieve associations/edges between biomedical entities, using a knowledge-provider (KP) API in the Translator ecosystem.  A KP API may do multiple operations of this type. These operations are  defined (kept separate) by their different combinations of input-entity-type, biolink predicate, source, and output-entity-type. ",
   "properties": {
@@ -328,7 +328,7 @@
                   }
                 },
                 "references": {
-                  "description": "Put the stuff users expect as evidence here. They expect linkouts to external, understandable stuff like publications and webpages that show the association or where it came from. ",
+                  "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
@@ -338,6 +338,28 @@
                       "patternProperties": {
                         ".": {
                           "oneOf": [
+                            {
+                              "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                              "type": "object",
+                              "required": [
+                                "value"
+                              ],
+                              "properties": {
+                                "value": {
+                                  "oneOf": [
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
                             {
                               "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
                               "type": "object",
@@ -381,36 +403,62 @@
                       }
                     },
                     "websites": {
-                      "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
-                      "required": [
-                        "instructions",
-                        "template",
-                        "templateKeys",
-                        "bteCode"
-                      ],
-                      "properties": {
-                        "instructions": {
-                          "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
-                          "type": "string"
-                        },
-                        "template": {
-                          "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
-                          "type": "string"
-                        },
-                        "templateKeys": {
-                          "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                      "oneOf": [
+                        {
+                          "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
                           "type": "object",
-                          "patternProperties": {
-                            ".": {
-                              "type": "string"
+                          "required": [
+                            "value"
+                          ],
+                          "properties": {
+                            "value": {
+                              "oneOf": [
+                                {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
                             }
                           }
                         },
-                        "bteCode": {
-                          "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
-                          "type": "string"
+                        {
+                          "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+                          "required": [
+                            "instructions",
+                            "template",
+                            "templateKeys",
+                            "bteCode"
+                          ],
+                          "properties": {
+                            "instructions": {
+                              "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                              "type": "string"
+                            },
+                            "template": {
+                              "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                              "type": "string"
+                            },
+                            "templateKeys": {
+                              "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                              "type": "object",
+                              "patternProperties": {
+                                ".": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "bteCode": {
+                              "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                              "type": "string"
+                            }
+                          }
                         }
-                      }
+                      ]
                     }
                   }
                 },
@@ -448,11 +496,11 @@
                                 "type": "string"
                               },
                               "method": {
-                                "description": "Keyword noting what the knowledge-source/API/resource did to build the association from data/knowledge. Current possible values  include ingest, NLP, manual_curation, propagate_from_phenotype,  propagate_from_protein_variant, propagate_from_seq_variant,  submission. ",
+                                "description": "Keyword noting what the knowledge-source/API/resource did to build the association from data/knowledge. Current possible values  include ingest, NLP, manual_curation, shared_phenotype, shared_disease,  shared_variant, submission, orthology_mapping. ",
                                 "type": "string"
                               },
-                              "methodReferences": {
-                                "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+                              "sourceReferences": {
+                                "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
                                 "type": "object",
                                 "additionalProperties": false,
                                 "properties": {
@@ -463,13 +511,64 @@
                                       ".": {
                                         "oneOf": [
                                           {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "string"
+                                            "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                                            "type": "object",
+                                            "required": [
+                                              "value"
+                                            ],
+                                            "properties": {
+                                              "value": {
+                                                "oneOf": [
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  {
+                                                    "type": "string"
+                                                  }
+                                                ]
+                                              }
                                             }
                                           },
                                           {
-                                            "type": "string"
+                                            "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
+                                            "type": "object",
+                                            "required": [
+                                              "responseField"
+                                            ],
+                                            "properties": {
+                                              "responseField": {
+                                                "type": "string"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "description": "Edge property is dynamic but its value has to be mapped or transformed  from the value of a specific field in the API response/JSON record. ",
+                                            "required": [
+                                              "instructions",
+                                              "responseField",
+                                              "bteCode"
+                                            ],
+                                            "properties": {
+                                              "instructions": {
+                                                "description": "describes what should be done to get the desired info, using the other items in this object. Also describes the result (what is the edge  property key, what is the value). ",
+                                                "type": "string"
+                                              },
+                                              "responseField": {
+                                                "description": "dot-notation for field in API/JSON response to use.",
+                                                "type": "string"
+                                              },
+                                              "mappingFile": {
+                                                "description": "github link to YAML file that contains the mapping from values in  specific API/JSON responses to the desired info. Used for  post-processing (see bteCode field).",
+                                                "type": "string"
+                                              },
+                                              "bteCode": {
+                                                "description": "github link to code that BTE uses to post-process API/JSON response  (either using the mapping file or calling services) and get the info.",
+                                                "type": "string"
+                                              }
+                                            }
                                           }
                                         ]
                                       }
@@ -478,13 +577,58 @@
                                   "websites": {
                                     "oneOf": [
                                       {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
+                                        "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                                        "type": "object",
+                                        "required": [
+                                          "value"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "oneOf": [
+                                              {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              {
+                                                "type": "string"
+                                              }
+                                            ]
+                                          }
                                         }
                                       },
                                       {
-                                        "type": "string"
+                                        "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+                                        "required": [
+                                          "instructions",
+                                          "template",
+                                          "templateKeys",
+                                          "bteCode"
+                                        ],
+                                        "properties": {
+                                          "instructions": {
+                                            "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                                            "type": "string"
+                                          },
+                                          "template": {
+                                            "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                                            "type": "string"
+                                          },
+                                          "templateKeys": {
+                                            "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                                            "type": "object",
+                                            "patternProperties": {
+                                              ".": {
+                                                "type": "string"
+                                              }
+                                            }
+                                          },
+                                          "bteCode": {
+                                            "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                                            "type": "string"
+                                          }
+                                        }
                                       }
                                     ]
                                   }
@@ -495,7 +639,7 @@
                                 "type": "string"
                               },
                               "sourceContext": {
-                                "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
+                                "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, after processing, the final values will be  from ontologies (CURIE format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
                                 "type": "object",
                                 "additionalProperties": false,
                                 "patternProperties": {
@@ -627,7 +771,7 @@
                             "type": "string"
                           },
                           "measureReferences": {
-                            "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+                            "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
                             "type": "object",
                             "additionalProperties": false,
                             "properties": {
@@ -638,13 +782,64 @@
                                   ".": {
                                     "oneOf": [
                                       {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
+                                        "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                                        "type": "object",
+                                        "required": [
+                                          "value"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "oneOf": [
+                                              {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              {
+                                                "type": "string"
+                                              }
+                                            ]
+                                          }
                                         }
                                       },
                                       {
-                                        "type": "string"
+                                        "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
+                                        "type": "object",
+                                        "required": [
+                                          "responseField"
+                                        ],
+                                        "properties": {
+                                          "responseField": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "description": "Edge property is dynamic but its value has to be mapped or transformed  from the value of a specific field in the API response/JSON record. ",
+                                        "required": [
+                                          "instructions",
+                                          "responseField",
+                                          "bteCode"
+                                        ],
+                                        "properties": {
+                                          "instructions": {
+                                            "description": "describes what should be done to get the desired info, using the other items in this object. Also describes the result (what is the edge  property key, what is the value). ",
+                                            "type": "string"
+                                          },
+                                          "responseField": {
+                                            "description": "dot-notation for field in API/JSON response to use.",
+                                            "type": "string"
+                                          },
+                                          "mappingFile": {
+                                            "description": "github link to YAML file that contains the mapping from values in  specific API/JSON responses to the desired info. Used for  post-processing (see bteCode field).",
+                                            "type": "string"
+                                          },
+                                          "bteCode": {
+                                            "description": "github link to code that BTE uses to post-process API/JSON response  (either using the mapping file or calling services) and get the info.",
+                                            "type": "string"
+                                          }
+                                        }
                                       }
                                     ]
                                   }
@@ -653,13 +848,58 @@
                               "websites": {
                                 "oneOf": [
                                   {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
+                                    "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                                    "type": "object",
+                                    "required": [
+                                      "value"
+                                    ],
+                                    "properties": {
+                                      "value": {
+                                        "oneOf": [
+                                          {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          {
+                                            "type": "string"
+                                          }
+                                        ]
+                                      }
                                     }
                                   },
                                   {
-                                    "type": "string"
+                                    "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+                                    "required": [
+                                      "instructions",
+                                      "template",
+                                      "templateKeys",
+                                      "bteCode"
+                                    ],
+                                    "properties": {
+                                      "instructions": {
+                                        "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                                        "type": "string"
+                                      },
+                                      "template": {
+                                        "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                                        "type": "string"
+                                      },
+                                      "templateKeys": {
+                                        "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                                        "type": "object",
+                                        "patternProperties": {
+                                          ".": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "bteCode": {
+                                        "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                                        "type": "string"
+                                      }
+                                    }
                                   }
                                 ]
                               }
@@ -759,7 +999,7 @@
                             "type": "string"
                           },
                           "measureReferences": {
-                            "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+                            "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
                             "type": "object",
                             "additionalProperties": false,
                             "properties": {
@@ -770,13 +1010,64 @@
                                   ".": {
                                     "oneOf": [
                                       {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string"
+                                        "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                                        "type": "object",
+                                        "required": [
+                                          "value"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "oneOf": [
+                                              {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              {
+                                                "type": "string"
+                                              }
+                                            ]
+                                          }
                                         }
                                       },
                                       {
-                                        "type": "string"
+                                        "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
+                                        "type": "object",
+                                        "required": [
+                                          "responseField"
+                                        ],
+                                        "properties": {
+                                          "responseField": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "description": "Edge property is dynamic but its value has to be mapped or transformed  from the value of a specific field in the API response/JSON record. ",
+                                        "required": [
+                                          "instructions",
+                                          "responseField",
+                                          "bteCode"
+                                        ],
+                                        "properties": {
+                                          "instructions": {
+                                            "description": "describes what should be done to get the desired info, using the other items in this object. Also describes the result (what is the edge  property key, what is the value). ",
+                                            "type": "string"
+                                          },
+                                          "responseField": {
+                                            "description": "dot-notation for field in API/JSON response to use.",
+                                            "type": "string"
+                                          },
+                                          "mappingFile": {
+                                            "description": "github link to YAML file that contains the mapping from values in  specific API/JSON responses to the desired info. Used for  post-processing (see bteCode field).",
+                                            "type": "string"
+                                          },
+                                          "bteCode": {
+                                            "description": "github link to code that BTE uses to post-process API/JSON response  (either using the mapping file or calling services) and get the info.",
+                                            "type": "string"
+                                          }
+                                        }
                                       }
                                     ]
                                   }
@@ -785,13 +1076,58 @@
                               "websites": {
                                 "oneOf": [
                                   {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
+                                    "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                                    "type": "object",
+                                    "required": [
+                                      "value"
+                                    ],
+                                    "properties": {
+                                      "value": {
+                                        "oneOf": [
+                                          {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          {
+                                            "type": "string"
+                                          }
+                                        ]
+                                      }
                                     }
                                   },
                                   {
-                                    "type": "string"
+                                    "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+                                    "required": [
+                                      "instructions",
+                                      "template",
+                                      "templateKeys",
+                                      "bteCode"
+                                    ],
+                                    "properties": {
+                                      "instructions": {
+                                        "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                                        "type": "string"
+                                      },
+                                      "template": {
+                                        "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                                        "type": "string"
+                                      },
+                                      "templateKeys": {
+                                        "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                                        "type": "object",
+                                        "patternProperties": {
+                                          ".": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "bteCode": {
+                                        "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                                        "type": "string"
+                                      }
+                                    }
                                   }
                                 ]
                               }
@@ -832,7 +1168,7 @@
                   "type": "object",
                   "properties": {
                     "associationRetrieval": {
-                      "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
+                      "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, after processing, the final values will be  from ontologies (CURIE format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
                       "type": "object",
                       "additionalProperties": false,
                       "patternProperties": {
@@ -1231,7 +1567,7 @@
           }
         },
         "references": {
-          "description": "Put the stuff users expect as evidence here. They expect linkouts to external, understandable stuff like publications and webpages that show the association or where it came from. ",
+          "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -1241,6 +1577,28 @@
               "patternProperties": {
                 ".": {
                   "oneOf": [
+                    {
+                      "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                      "type": "object",
+                      "required": [
+                        "value"
+                      ],
+                      "properties": {
+                        "value": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      }
+                    },
                     {
                       "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
                       "type": "object",
@@ -1284,36 +1642,62 @@
               }
             },
             "websites": {
-              "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
-              "required": [
-                "instructions",
-                "template",
-                "templateKeys",
-                "bteCode"
-              ],
-              "properties": {
-                "instructions": {
-                  "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
-                  "type": "string"
-                },
-                "template": {
-                  "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
-                  "type": "string"
-                },
-                "templateKeys": {
-                  "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+              "oneOf": [
+                {
+                  "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
                   "type": "object",
-                  "patternProperties": {
-                    ".": {
-                      "type": "string"
+                  "required": [
+                    "value"
+                  ],
+                  "properties": {
+                    "value": {
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
                     }
                   }
                 },
-                "bteCode": {
-                  "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
-                  "type": "string"
+                {
+                  "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+                  "required": [
+                    "instructions",
+                    "template",
+                    "templateKeys",
+                    "bteCode"
+                  ],
+                  "properties": {
+                    "instructions": {
+                      "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                      "type": "string"
+                    },
+                    "template": {
+                      "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                      "type": "string"
+                    },
+                    "templateKeys": {
+                      "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                      "type": "object",
+                      "patternProperties": {
+                        ".": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "bteCode": {
+                      "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                      "type": "string"
+                    }
+                  }
                 }
-              }
+              ]
             }
           }
         },
@@ -1351,11 +1735,11 @@
                         "type": "string"
                       },
                       "method": {
-                        "description": "Keyword noting what the knowledge-source/API/resource did to build the association from data/knowledge. Current possible values  include ingest, NLP, manual_curation, propagate_from_phenotype,  propagate_from_protein_variant, propagate_from_seq_variant,  submission. ",
+                        "description": "Keyword noting what the knowledge-source/API/resource did to build the association from data/knowledge. Current possible values  include ingest, NLP, manual_curation, shared_phenotype, shared_disease,  shared_variant, submission, orthology_mapping. ",
                         "type": "string"
                       },
-                      "methodReferences": {
-                        "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+                      "sourceReferences": {
+                        "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
                         "type": "object",
                         "additionalProperties": false,
                         "properties": {
@@ -1366,13 +1750,64 @@
                               ".": {
                                 "oneOf": [
                                   {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
+                                    "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                                    "type": "object",
+                                    "required": [
+                                      "value"
+                                    ],
+                                    "properties": {
+                                      "value": {
+                                        "oneOf": [
+                                          {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          {
+                                            "type": "string"
+                                          }
+                                        ]
+                                      }
                                     }
                                   },
                                   {
-                                    "type": "string"
+                                    "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
+                                    "type": "object",
+                                    "required": [
+                                      "responseField"
+                                    ],
+                                    "properties": {
+                                      "responseField": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "description": "Edge property is dynamic but its value has to be mapped or transformed  from the value of a specific field in the API response/JSON record. ",
+                                    "required": [
+                                      "instructions",
+                                      "responseField",
+                                      "bteCode"
+                                    ],
+                                    "properties": {
+                                      "instructions": {
+                                        "description": "describes what should be done to get the desired info, using the other items in this object. Also describes the result (what is the edge  property key, what is the value). ",
+                                        "type": "string"
+                                      },
+                                      "responseField": {
+                                        "description": "dot-notation for field in API/JSON response to use.",
+                                        "type": "string"
+                                      },
+                                      "mappingFile": {
+                                        "description": "github link to YAML file that contains the mapping from values in  specific API/JSON responses to the desired info. Used for  post-processing (see bteCode field).",
+                                        "type": "string"
+                                      },
+                                      "bteCode": {
+                                        "description": "github link to code that BTE uses to post-process API/JSON response  (either using the mapping file or calling services) and get the info.",
+                                        "type": "string"
+                                      }
+                                    }
                                   }
                                 ]
                               }
@@ -1381,13 +1816,58 @@
                           "websites": {
                             "oneOf": [
                               {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
+                                "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {
+                                    "oneOf": [
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
                                 }
                               },
                               {
-                                "type": "string"
+                                "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+                                "required": [
+                                  "instructions",
+                                  "template",
+                                  "templateKeys",
+                                  "bteCode"
+                                ],
+                                "properties": {
+                                  "instructions": {
+                                    "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                                    "type": "string"
+                                  },
+                                  "template": {
+                                    "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                                    "type": "string"
+                                  },
+                                  "templateKeys": {
+                                    "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                                    "type": "object",
+                                    "patternProperties": {
+                                      ".": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  "bteCode": {
+                                    "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                                    "type": "string"
+                                  }
+                                }
                               }
                             ]
                           }
@@ -1398,7 +1878,7 @@
                         "type": "string"
                       },
                       "sourceContext": {
-                        "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
+                        "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, after processing, the final values will be  from ontologies (CURIE format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
                         "type": "object",
                         "additionalProperties": false,
                         "patternProperties": {
@@ -1530,7 +2010,7 @@
                     "type": "string"
                   },
                   "measureReferences": {
-                    "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+                    "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
@@ -1541,13 +2021,64 @@
                           ".": {
                             "oneOf": [
                               {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
+                                "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {
+                                    "oneOf": [
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
                                 }
                               },
                               {
-                                "type": "string"
+                                "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
+                                "type": "object",
+                                "required": [
+                                  "responseField"
+                                ],
+                                "properties": {
+                                  "responseField": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              {
+                                "description": "Edge property is dynamic but its value has to be mapped or transformed  from the value of a specific field in the API response/JSON record. ",
+                                "required": [
+                                  "instructions",
+                                  "responseField",
+                                  "bteCode"
+                                ],
+                                "properties": {
+                                  "instructions": {
+                                    "description": "describes what should be done to get the desired info, using the other items in this object. Also describes the result (what is the edge  property key, what is the value). ",
+                                    "type": "string"
+                                  },
+                                  "responseField": {
+                                    "description": "dot-notation for field in API/JSON response to use.",
+                                    "type": "string"
+                                  },
+                                  "mappingFile": {
+                                    "description": "github link to YAML file that contains the mapping from values in  specific API/JSON responses to the desired info. Used for  post-processing (see bteCode field).",
+                                    "type": "string"
+                                  },
+                                  "bteCode": {
+                                    "description": "github link to code that BTE uses to post-process API/JSON response  (either using the mapping file or calling services) and get the info.",
+                                    "type": "string"
+                                  }
+                                }
                               }
                             ]
                           }
@@ -1556,13 +2087,58 @@
                       "websites": {
                         "oneOf": [
                           {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
+                            "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {
+                                "oneOf": [
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
                             }
                           },
                           {
-                            "type": "string"
+                            "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+                            "required": [
+                              "instructions",
+                              "template",
+                              "templateKeys",
+                              "bteCode"
+                            ],
+                            "properties": {
+                              "instructions": {
+                                "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                                "type": "string"
+                              },
+                              "template": {
+                                "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                                "type": "string"
+                              },
+                              "templateKeys": {
+                                "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                                "type": "object",
+                                "patternProperties": {
+                                  ".": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "bteCode": {
+                                "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                                "type": "string"
+                              }
+                            }
                           }
                         ]
                       }
@@ -1662,7 +2238,7 @@
                     "type": "string"
                   },
                   "measureReferences": {
-                    "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+                    "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
@@ -1673,13 +2249,64 @@
                           ".": {
                             "oneOf": [
                               {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
+                                "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                                "type": "object",
+                                "required": [
+                                  "value"
+                                ],
+                                "properties": {
+                                  "value": {
+                                    "oneOf": [
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  }
                                 }
                               },
                               {
-                                "type": "string"
+                                "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
+                                "type": "object",
+                                "required": [
+                                  "responseField"
+                                ],
+                                "properties": {
+                                  "responseField": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              {
+                                "description": "Edge property is dynamic but its value has to be mapped or transformed  from the value of a specific field in the API response/JSON record. ",
+                                "required": [
+                                  "instructions",
+                                  "responseField",
+                                  "bteCode"
+                                ],
+                                "properties": {
+                                  "instructions": {
+                                    "description": "describes what should be done to get the desired info, using the other items in this object. Also describes the result (what is the edge  property key, what is the value). ",
+                                    "type": "string"
+                                  },
+                                  "responseField": {
+                                    "description": "dot-notation for field in API/JSON response to use.",
+                                    "type": "string"
+                                  },
+                                  "mappingFile": {
+                                    "description": "github link to YAML file that contains the mapping from values in  specific API/JSON responses to the desired info. Used for  post-processing (see bteCode field).",
+                                    "type": "string"
+                                  },
+                                  "bteCode": {
+                                    "description": "github link to code that BTE uses to post-process API/JSON response  (either using the mapping file or calling services) and get the info.",
+                                    "type": "string"
+                                  }
+                                }
                               }
                             ]
                           }
@@ -1688,13 +2315,58 @@
                       "websites": {
                         "oneOf": [
                           {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
+                            "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                            "type": "object",
+                            "required": [
+                              "value"
+                            ],
+                            "properties": {
+                              "value": {
+                                "oneOf": [
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              }
                             }
                           },
                           {
-                            "type": "string"
+                            "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+                            "required": [
+                              "instructions",
+                              "template",
+                              "templateKeys",
+                              "bteCode"
+                            ],
+                            "properties": {
+                              "instructions": {
+                                "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                                "type": "string"
+                              },
+                              "template": {
+                                "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                                "type": "string"
+                              },
+                              "templateKeys": {
+                                "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                                "type": "object",
+                                "patternProperties": {
+                                  ".": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "bteCode": {
+                                "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                                "type": "string"
+                              }
+                            }
                           }
                         ]
                       }
@@ -1735,7 +2407,7 @@
           "type": "object",
           "properties": {
             "associationRetrieval": {
-              "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
+              "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, after processing, the final values will be  from ontologies (CURIE format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
               "type": "object",
               "additionalProperties": false,
               "patternProperties": {
@@ -1986,8 +2658,8 @@
         }
       }
     },
-    "staticRefObj": {
-      "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+    "referenceObj": {
+      "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -1998,13 +2670,64 @@
             ".": {
               "oneOf": [
                 {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
+                  "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                  "type": "object",
+                  "required": [
+                    "value"
+                  ],
+                  "properties": {
+                    "value": {
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
                   }
                 },
                 {
-                  "type": "string"
+                  "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
+                  "type": "object",
+                  "required": [
+                    "responseField"
+                  ],
+                  "properties": {
+                    "responseField": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "description": "Edge property is dynamic but its value has to be mapped or transformed  from the value of a specific field in the API response/JSON record. ",
+                  "required": [
+                    "instructions",
+                    "responseField",
+                    "bteCode"
+                  ],
+                  "properties": {
+                    "instructions": {
+                      "description": "describes what should be done to get the desired info, using the other items in this object. Also describes the result (what is the edge  property key, what is the value). ",
+                      "type": "string"
+                    },
+                    "responseField": {
+                      "description": "dot-notation for field in API/JSON response to use.",
+                      "type": "string"
+                    },
+                    "mappingFile": {
+                      "description": "github link to YAML file that contains the mapping from values in  specific API/JSON responses to the desired info. Used for  post-processing (see bteCode field).",
+                      "type": "string"
+                    },
+                    "bteCode": {
+                      "description": "github link to code that BTE uses to post-process API/JSON response  (either using the mapping file or calling services) and get the info.",
+                      "type": "string"
+                    }
+                  }
                 }
               ]
             }
@@ -2013,13 +2736,58 @@
         "websites": {
           "oneOf": [
             {
-              "type": "array",
-              "items": {
-                "type": "string"
+              "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+              "type": "object",
+              "required": [
+                "value"
+              ],
+              "properties": {
+                "value": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
               }
             },
             {
-              "type": "string"
+              "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+              "required": [
+                "instructions",
+                "template",
+                "templateKeys",
+                "bteCode"
+              ],
+              "properties": {
+                "instructions": {
+                  "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                  "type": "string"
+                },
+                "template": {
+                  "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                  "type": "string"
+                },
+                "templateKeys": {
+                  "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                  "type": "object",
+                  "patternProperties": {
+                    ".": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "bteCode": {
+                  "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                  "type": "string"
+                }
+              }
             }
           ]
         }
@@ -2049,7 +2817,7 @@
           "type": "string"
         },
         "measureReferences": {
-          "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+          "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -2060,13 +2828,64 @@
                 ".": {
                   "oneOf": [
                     {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
+                      "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                      "type": "object",
+                      "required": [
+                        "value"
+                      ],
+                      "properties": {
+                        "value": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
                       }
                     },
                     {
-                      "type": "string"
+                      "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
+                      "type": "object",
+                      "required": [
+                        "responseField"
+                      ],
+                      "properties": {
+                        "responseField": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "description": "Edge property is dynamic but its value has to be mapped or transformed  from the value of a specific field in the API response/JSON record. ",
+                      "required": [
+                        "instructions",
+                        "responseField",
+                        "bteCode"
+                      ],
+                      "properties": {
+                        "instructions": {
+                          "description": "describes what should be done to get the desired info, using the other items in this object. Also describes the result (what is the edge  property key, what is the value). ",
+                          "type": "string"
+                        },
+                        "responseField": {
+                          "description": "dot-notation for field in API/JSON response to use.",
+                          "type": "string"
+                        },
+                        "mappingFile": {
+                          "description": "github link to YAML file that contains the mapping from values in  specific API/JSON responses to the desired info. Used for  post-processing (see bteCode field).",
+                          "type": "string"
+                        },
+                        "bteCode": {
+                          "description": "github link to code that BTE uses to post-process API/JSON response  (either using the mapping file or calling services) and get the info.",
+                          "type": "string"
+                        }
+                      }
                     }
                   ]
                 }
@@ -2075,13 +2894,58 @@
             "websites": {
               "oneOf": [
                 {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
+                  "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                  "type": "object",
+                  "required": [
+                    "value"
+                  ],
+                  "properties": {
+                    "value": {
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
                   }
                 },
                 {
-                  "type": "string"
+                  "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+                  "required": [
+                    "instructions",
+                    "template",
+                    "templateKeys",
+                    "bteCode"
+                  ],
+                  "properties": {
+                    "instructions": {
+                      "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                      "type": "string"
+                    },
+                    "template": {
+                      "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                      "type": "string"
+                    },
+                    "templateKeys": {
+                      "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                      "type": "object",
+                      "patternProperties": {
+                        ".": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "bteCode": {
+                      "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                      "type": "string"
+                    }
+                  }
                 }
               ]
             }
@@ -2115,7 +2979,7 @@
               "type": "string"
             },
             "measureReferences": {
-              "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+              "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
               "type": "object",
               "additionalProperties": false,
               "properties": {
@@ -2126,13 +2990,64 @@
                     ".": {
                       "oneOf": [
                         {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
+                          "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                          "type": "object",
+                          "required": [
+                            "value"
+                          ],
+                          "properties": {
+                            "value": {
+                              "oneOf": [
+                                {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            }
                           }
                         },
                         {
-                          "type": "string"
+                          "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
+                          "type": "object",
+                          "required": [
+                            "responseField"
+                          ],
+                          "properties": {
+                            "responseField": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "description": "Edge property is dynamic but its value has to be mapped or transformed  from the value of a specific field in the API response/JSON record. ",
+                          "required": [
+                            "instructions",
+                            "responseField",
+                            "bteCode"
+                          ],
+                          "properties": {
+                            "instructions": {
+                              "description": "describes what should be done to get the desired info, using the other items in this object. Also describes the result (what is the edge  property key, what is the value). ",
+                              "type": "string"
+                            },
+                            "responseField": {
+                              "description": "dot-notation for field in API/JSON response to use.",
+                              "type": "string"
+                            },
+                            "mappingFile": {
+                              "description": "github link to YAML file that contains the mapping from values in  specific API/JSON responses to the desired info. Used for  post-processing (see bteCode field).",
+                              "type": "string"
+                            },
+                            "bteCode": {
+                              "description": "github link to code that BTE uses to post-process API/JSON response  (either using the mapping file or calling services) and get the info.",
+                              "type": "string"
+                            }
+                          }
                         }
                       ]
                     }
@@ -2141,13 +3056,58 @@
                 "websites": {
                   "oneOf": [
                     {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
+                      "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                      "type": "object",
+                      "required": [
+                        "value"
+                      ],
+                      "properties": {
+                        "value": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
                       }
                     },
                     {
-                      "type": "string"
+                      "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+                      "required": [
+                        "instructions",
+                        "template",
+                        "templateKeys",
+                        "bteCode"
+                      ],
+                      "properties": {
+                        "instructions": {
+                          "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                          "type": "string"
+                        },
+                        "template": {
+                          "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                          "type": "string"
+                        },
+                        "templateKeys": {
+                          "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                          "type": "object",
+                          "patternProperties": {
+                            ".": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "bteCode": {
+                          "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                          "type": "string"
+                        }
+                      }
                     }
                   ]
                 }
@@ -2243,7 +3203,7 @@
               "type": "string"
             },
             "measureReferences": {
-              "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+              "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
               "type": "object",
               "additionalProperties": false,
               "properties": {
@@ -2254,13 +3214,64 @@
                     ".": {
                       "oneOf": [
                         {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
+                          "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                          "type": "object",
+                          "required": [
+                            "value"
+                          ],
+                          "properties": {
+                            "value": {
+                              "oneOf": [
+                                {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ]
+                            }
                           }
                         },
                         {
-                          "type": "string"
+                          "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
+                          "type": "object",
+                          "required": [
+                            "responseField"
+                          ],
+                          "properties": {
+                            "responseField": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "description": "Edge property is dynamic but its value has to be mapped or transformed  from the value of a specific field in the API response/JSON record. ",
+                          "required": [
+                            "instructions",
+                            "responseField",
+                            "bteCode"
+                          ],
+                          "properties": {
+                            "instructions": {
+                              "description": "describes what should be done to get the desired info, using the other items in this object. Also describes the result (what is the edge  property key, what is the value). ",
+                              "type": "string"
+                            },
+                            "responseField": {
+                              "description": "dot-notation for field in API/JSON response to use.",
+                              "type": "string"
+                            },
+                            "mappingFile": {
+                              "description": "github link to YAML file that contains the mapping from values in  specific API/JSON responses to the desired info. Used for  post-processing (see bteCode field).",
+                              "type": "string"
+                            },
+                            "bteCode": {
+                              "description": "github link to code that BTE uses to post-process API/JSON response  (either using the mapping file or calling services) and get the info.",
+                              "type": "string"
+                            }
+                          }
                         }
                       ]
                     }
@@ -2269,13 +3280,58 @@
                 "websites": {
                   "oneOf": [
                     {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
+                      "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                      "type": "object",
+                      "required": [
+                        "value"
+                      ],
+                      "properties": {
+                        "value": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
                       }
                     },
                     {
-                      "type": "string"
+                      "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+                      "required": [
+                        "instructions",
+                        "template",
+                        "templateKeys",
+                        "bteCode"
+                      ],
+                      "properties": {
+                        "instructions": {
+                          "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                          "type": "string"
+                        },
+                        "template": {
+                          "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                          "type": "string"
+                        },
+                        "templateKeys": {
+                          "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                          "type": "object",
+                          "patternProperties": {
+                            ".": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "bteCode": {
+                          "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                          "type": "string"
+                        }
+                      }
                     }
                   ]
                 }
@@ -2310,8 +3366,8 @@
         }
       ]
     },
-    "oneContextObj": {
-      "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
+    "contextObj": {
+      "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, after processing, the final values will be  from ontologies (CURIE format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
       "type": "object",
       "additionalProperties": false,
       "patternProperties": {
@@ -2409,11 +3465,11 @@
             "type": "string"
           },
           "method": {
-            "description": "Keyword noting what the knowledge-source/API/resource did to build the association from data/knowledge. Current possible values  include ingest, NLP, manual_curation, propagate_from_phenotype,  propagate_from_protein_variant, propagate_from_seq_variant,  submission. ",
+            "description": "Keyword noting what the knowledge-source/API/resource did to build the association from data/knowledge. Current possible values  include ingest, NLP, manual_curation, shared_phenotype, shared_disease,  shared_variant, submission, orthology_mapping. ",
             "type": "string"
           },
-          "methodReferences": {
-            "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+          "sourceReferences": {
+            "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
             "type": "object",
             "additionalProperties": false,
             "properties": {
@@ -2424,13 +3480,64 @@
                   ".": {
                     "oneOf": [
                       {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
+                        "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                        "type": "object",
+                        "required": [
+                          "value"
+                        ],
+                        "properties": {
+                          "value": {
+                            "oneOf": [
+                              {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
                         }
                       },
                       {
-                        "type": "string"
+                        "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
+                        "type": "object",
+                        "required": [
+                          "responseField"
+                        ],
+                        "properties": {
+                          "responseField": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "description": "Edge property is dynamic but its value has to be mapped or transformed  from the value of a specific field in the API response/JSON record. ",
+                        "required": [
+                          "instructions",
+                          "responseField",
+                          "bteCode"
+                        ],
+                        "properties": {
+                          "instructions": {
+                            "description": "describes what should be done to get the desired info, using the other items in this object. Also describes the result (what is the edge  property key, what is the value). ",
+                            "type": "string"
+                          },
+                          "responseField": {
+                            "description": "dot-notation for field in API/JSON response to use.",
+                            "type": "string"
+                          },
+                          "mappingFile": {
+                            "description": "github link to YAML file that contains the mapping from values in  specific API/JSON responses to the desired info. Used for  post-processing (see bteCode field).",
+                            "type": "string"
+                          },
+                          "bteCode": {
+                            "description": "github link to code that BTE uses to post-process API/JSON response  (either using the mapping file or calling services) and get the info.",
+                            "type": "string"
+                          }
+                        }
                       }
                     ]
                   }
@@ -2439,13 +3546,58 @@
               "websites": {
                 "oneOf": [
                   {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
+                    "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                    "type": "object",
+                    "required": [
+                      "value"
+                    ],
+                    "properties": {
+                      "value": {
+                        "oneOf": [
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
                     }
                   },
                   {
-                    "type": "string"
+                    "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+                    "required": [
+                      "instructions",
+                      "template",
+                      "templateKeys",
+                      "bteCode"
+                    ],
+                    "properties": {
+                      "instructions": {
+                        "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                        "type": "string"
+                      },
+                      "template": {
+                        "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                        "type": "string"
+                      },
+                      "templateKeys": {
+                        "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                        "type": "object",
+                        "patternProperties": {
+                          ".": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "bteCode": {
+                        "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                        "type": "string"
+                      }
+                    }
                   }
                 ]
               }
@@ -2456,7 +3608,7 @@
             "type": "string"
           },
           "sourceContext": {
-            "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
+            "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, after processing, the final values will be  from ontologies (CURIE format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
             "type": "object",
             "additionalProperties": false,
             "patternProperties": {
@@ -2554,11 +3706,11 @@
           "type": "string"
         },
         "method": {
-          "description": "Keyword noting what the knowledge-source/API/resource did to build the association from data/knowledge. Current possible values  include ingest, NLP, manual_curation, propagate_from_phenotype,  propagate_from_protein_variant, propagate_from_seq_variant,  submission. ",
+          "description": "Keyword noting what the knowledge-source/API/resource did to build the association from data/knowledge. Current possible values  include ingest, NLP, manual_curation, shared_phenotype, shared_disease,  shared_variant, submission, orthology_mapping. ",
           "type": "string"
         },
-        "methodReferences": {
-          "description": "Used to provide publications and website URLs for users who want to learn  more about a knowledge-source, measure, context/relevance, etc. ",
+        "sourceReferences": {
+          "description": "Used to provide publications and website URLs for users who want to learn  more about an association, knowledge-source, measure, context/relevance, etc. ",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -2569,13 +3721,64 @@
                 ".": {
                   "oneOf": [
                     {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
+                      "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                      "type": "object",
+                      "required": [
+                        "value"
+                      ],
+                      "properties": {
+                        "value": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
                       }
                     },
                     {
-                      "type": "string"
+                      "description": "Edge property is dynamic and should have the value of a specific field in  the API response/JSON record. In this situation, a field called  responseField is used. Use dot-notation to refer to the response field. ",
+                      "type": "object",
+                      "required": [
+                        "responseField"
+                      ],
+                      "properties": {
+                        "responseField": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "description": "Edge property is dynamic but its value has to be mapped or transformed  from the value of a specific field in the API response/JSON record. ",
+                      "required": [
+                        "instructions",
+                        "responseField",
+                        "bteCode"
+                      ],
+                      "properties": {
+                        "instructions": {
+                          "description": "describes what should be done to get the desired info, using the other items in this object. Also describes the result (what is the edge  property key, what is the value). ",
+                          "type": "string"
+                        },
+                        "responseField": {
+                          "description": "dot-notation for field in API/JSON response to use.",
+                          "type": "string"
+                        },
+                        "mappingFile": {
+                          "description": "github link to YAML file that contains the mapping from values in  specific API/JSON responses to the desired info. Used for  post-processing (see bteCode field).",
+                          "type": "string"
+                        },
+                        "bteCode": {
+                          "description": "github link to code that BTE uses to post-process API/JSON response  (either using the mapping file or calling services) and get the info.",
+                          "type": "string"
+                        }
+                      }
                     }
                   ]
                 }
@@ -2584,13 +3787,58 @@
             "websites": {
               "oneOf": [
                 {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
+                  "description": "Edge property is static, not dependent on response values. In this  situation, a field called value is used. ",
+                  "type": "object",
+                  "required": [
+                    "value"
+                  ],
+                  "properties": {
+                    "value": {
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
                   }
                 },
                 {
-                  "type": "string"
+                  "description": "Edge property is dynamic but has to be transformed from other values (API response/JSON record fields or variables) using a template",
+                  "required": [
+                    "instructions",
+                    "template",
+                    "templateKeys",
+                    "bteCode"
+                  ],
+                  "properties": {
+                    "instructions": {
+                      "description": "describes what should be done to get the desired info, using the  template and data (denoted using keywords). Also describes the result  (what is the edge property key, what is the value). ",
+                      "type": "string"
+                    },
+                    "template": {
+                      "description": "the string template (Python string-formatting-like). Keywords inside  curly brackets denote the parts of the template that should be  replaced by the corresponding values (see templateKeys). ",
+                      "type": "string"
+                    },
+                    "templateKeys": {
+                      "description": "Python-dict-like. Keys are the keywords used in the template; values are the API/JSON response fields or variable names that contain data. The data should be used to replace the keywords in the template. ",
+                      "type": "object",
+                      "patternProperties": {
+                        ".": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "bteCode": {
+                      "description": "github link to code that BTE uses to post-process API/JSON response  to get the desired info (edge property with value being an array of strings). ",
+                      "type": "string"
+                    }
+                  }
                 }
               ]
             }
@@ -2601,7 +3849,7 @@
           "type": "string"
         },
         "sourceContext": {
-          "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, the values will draw from ontologies (CURIE  format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
+          "description": "Object (Python-dict-like). Keys specify the type of context. Values could  be static (not dependent on response), take on a specific value in the  API/JSON response, or tranformed from the value of a specific field in the  API/JSON response. Ideally, after processing, the final values will be  from ontologies (CURIE format) or will be short strings.  Context/relevance is information that restricts the use or  interpretation of this association.  This is sometimes necessary for querying or for knowing when the  retrieved association is relevant to the problem being addressed.     ",
           "type": "object",
           "additionalProperties": false,
           "patternProperties": {

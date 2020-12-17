@@ -1,6 +1,6 @@
 ## follows JSON schema, has "$ref" that need to be expanded in use. 
 title: Schema for objects within x-bte-association-retrieval
-$schema: 'http://json-schema.org/draft-04/schema#'  ## change to a newer draft?
+$schema: 'http://json-schema.org/draft-07/schema#'  ## try this version, latest stable
 type: object
 description: >-
   Describes the operations that retrieve associations/edges between biomedical
@@ -50,7 +50,7 @@ definitions:
             type: object
           requestBody:
             type: object    
-      ## ?? can incorporate nodesConflated properties into inputs/outputs fields?
+      ## ?? can incorporate nodesConflated properties into inputs/outputs?
       inputs:
         description: >-
           Array of objects (Python-list-of-dict-like). Describes the 
@@ -107,29 +107,10 @@ definitions:
               often involve conflation of a gene with its altered gene product. 
             type: array
             items:
-              $ref: '#/definitions/conflatedNode'     
-      references:  ## IMPORTANT: users use this as evidence 
-        description: >- 
-          Put the stuff users expect as evidence here. They expect linkouts
-          to external, understandable stuff like publications and webpages
-          that show the association or where it came from. 
-        type: object
-        additionalProperties: False
-        properties: 
-          publications:
-            type: object
-            additionalProperties: False
-            patternProperties:
-            ## keys are ID namespace like pmid, pmc, doi, biorixv, medrxiv...
-            ## assuming the values come from the response  
-              .:  
-                oneOf:
-                - $ref: '#/definitions/takesOnResponseValue'
-                - $ref: '#/definitions/transformedFromResponseValue'   
-          websites:
-          ## at the moment, no APIs provide this. so we provide a schema for 
-          ##   sharing instructions and template to generate the webpage URLs
-            $ref: '#/definitions/transformUsingTemplate'
+              $ref: '#/definitions/conflatedNode'  
+      references:  ## IMPORTANT: users use this as evidence
+      ## includes publications and source websites that show the association
+        $ref: '#/definitions/referenceObj'              
       ## WHERE the association and its related info come from, and HOW   
       provenance:
         description:
@@ -174,7 +155,7 @@ definitions:
         type: object
         properties:
           associationRetrieval:   
-            $ref: '#/definitions/oneContextObj'  
+            $ref: '#/definitions/contextObj'  
       ## may set up fields later for other info? like what was used for 
       ##   triangulation (variant for disease->gene?), text-mining info, 
       ##   clinical-data/exposures info?
@@ -248,7 +229,7 @@ definitions:
     required:  
     - value
     properties:
-      value:  ## should this be just a string??
+      value: 
         $ref: '#/definitions/stringOrArrayOfStrings'  
   takesOnResponseValue:
     description: >-
@@ -356,24 +337,28 @@ definitions:
           Should match the name of a knowledge-source described in the provenance 
           associationRetrieval field.
         type: string  
-  staticRefObj:     
-  ## static meaning it doesn't directly depend on the value in a responseField
-    description: >-
+  referenceObj:  
+    description: >- 
       Used to provide publications and website URLs for users who want to learn 
-      more about a knowledge-source, measure, context/relevance, etc. 
+      more about an association, knowledge-source, measure, context/relevance, etc. 
     type: object
     additionalProperties: False
-    properties:
-      publications: 
+    properties: 
+      publications:
         type: object
         additionalProperties: False
         patternProperties:
         ## keys are ID namespace like pmid, pmc, doi, biorixv, medrxiv...
-          .:
-            $ref: '#/definitions/stringOrArrayOfStrings'  
+          .:  
+            oneOf:  ## values are static or come from the response
+            - $ref: '#/definitions/staticValue'
+            - $ref: '#/definitions/takesOnResponseValue'
+            - $ref: '#/definitions/transformedFromResponseValue' 
       websites:
-      ## value is a string URL or array of string URLs
-        $ref: '#/definitions/stringOrArrayOfStrings'  
+      ## value is static or can be made using a template
+        oneOf:  ## values are static or come from the response
+        - $ref: '#/definitions/staticValue'
+        - $ref: '#/definitions/transformUsingTemplate'
 ## assuming measure values are in the API response/JSON record. 
 ## therefore, schema similar to takesOnResponseValue, with some additional 
 ##   static information about the measure 
@@ -406,9 +391,9 @@ definitions:
           measure, for a specifc association/edge would mean. The assumption is 
           that only some associations/edges have a missing value. 
         type: string
-      measureReferences:
+      measureReferences:  
       ## put the publications/websites for more info here
-        $ref: '#/definitions/staticRefObj'     
+        $ref: '#/definitions/referenceObj'     
   oneNumericMeasure:
 #     Numeric measures have additional required info, like range and the 
 #     meaning of directions. Units may also be specified. 
@@ -500,13 +485,13 @@ definitions:
             forward|reverse:
               type: string     
   ## CONTEXT DATA OBJECT
-  oneContextObj:     
+  contextObj:     
     description: >-
       Object (Python-dict-like). Keys specify the type of context. Values could 
       be static (not dependent on response), take on a specific value in the 
       API/JSON response, or tranformed from the value of a specific field in the 
-      API/JSON response. Ideally, the values will draw from ontologies (CURIE 
-      format) or will be short strings. 
+      API/JSON response. Ideally, after processing, the final values will be 
+      from ontologies (CURIE format) or will be short strings. 
       Context/relevance is information that restricts the use or 
       interpretation of this association. 
       This is sometimes necessary for querying or for knowing when the 
@@ -565,18 +550,17 @@ definitions:
         description: >-
           Keyword noting what the knowledge-source/API/resource did to
           build the association from data/knowledge. Current possible values 
-          include ingest, NLP, manual_curation, propagate_from_phenotype, 
-          propagate_from_protein_variant, propagate_from_seq_variant, 
-          submission. 
+          include ingest, NLP, manual_curation, shared_phenotype, shared_disease, 
+          shared_variant, submission, orthology_mapping... 
         type: string
         ## manual_curation means people are trained to make these annotations 
         ##   (aka curators) and/or submissions are REVIEWED by curators before entering KB
         ## submission means people made these annotations but their work wasn't 
         ##   necessarily made or reviewed by curators 
-      methodReferences:
+      sourceReferences:
       ## put the publications/websites that have more info on how annotations were made
       ##  can be what was used to set/write method, descriptiveInfo, sourceContext...
-        $ref: '#/definitions/staticRefObj'  
+        $ref: '#/definitions/referenceObj'  
       descriptiveInfo:      
         description: >-
           Free-text description of what the source did to create the associations.
@@ -586,4 +570,4 @@ definitions:
       sourceContext:
         ## used ONLY when every association retrieved from this API is restricted 
         ##   in how it should be used or interpreted. 
-        $ref: '#/definitions/oneContextObj'
+        $ref: '#/definitions/contextObj'

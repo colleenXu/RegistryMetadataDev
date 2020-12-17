@@ -2,7 +2,7 @@
 ## note: currently has ALL the provenance and measure-related info 
 
 title: Schema for association made using registry x-bte-association-retrieval
-$schema: 'http://json-schema.org/draft-04/schema#'  ## change to a newer draft?
+$schema: 'http://json-schema.org/draft-07/schema#'  ## change to a newer draft?
 type: object
 description: >-
   Describes the edge properties of an association/edge between biomedical 
@@ -53,25 +53,7 @@ properties:
         items:
           $ref: '#/definitions/conflatedNode'    
   references:   ## IMPORTANT: users use this as evidence 
-    description: >- 
-      Put the stuff users expect as evidence here. They expect linkouts
-      to external, understandable stuff like publications and webpages
-      that show the association or where it came from. 
-    type: object
-    additionalProperties: False
-    properties:
-      publications:
-        type: object
-        additionalProperties: False
-        patternProperties:
-        ## keys are ID namespace like pmid, pmc, doi, biorixv, medrxiv...
-        ## assuming the values come from the response            
-          .:
-            $ref: '#/definitions/stringOrArrayOfStrings'  
-      websites:
-        type: array
-        items:
-          type: string
+    $ref: '#/definitions/referenceObj' 
   ## WHERE the association and its related info come from, and HOW   
   provenance:    
     description:
@@ -115,7 +97,8 @@ properties:
     type: object
     properties:
       associationRetrieval:   
-        $ref: '#/definitions/oneContextObj'    
+        $ref: '#/definitions/contextObj'  
+################################################################################      
 definitions:
   stringOrArrayOfStrings:
     oneOf:
@@ -149,24 +132,23 @@ definitions:
           Should match the name of a knowledge-source described in the provenance 
           associationRetrieval field.
         type: string  
-  staticRefObj:     
-  ## static meaning it doesn't directly depend on the API/JSON response
-    description: >-
+  referenceObj:   ## IMPORTANT: users use this as evidence 
+    description: >- 
       Used to provide publications and website URLs for users who want to learn 
-      more about a knowledge-source, measure, context/relevance, etc. 
+      more about an association, knowledge-source, measure, context/relevance, etc. 
     type: object
     additionalProperties: False
     properties:
-      publications: 
+      publications:
         type: object
         additionalProperties: False
         patternProperties:
         ## keys are ID namespace like pmid, pmc, doi, biorixv, medrxiv...
+        ## assuming the values come from the response            
           .:
             $ref: '#/definitions/stringOrArrayOfStrings'  
       websites:
-      ## value is a string URL or array of string URLs
-        $ref: '#/definitions/stringOrArrayOfStrings'  
+        $ref: '#/definitions/stringOrArrayOfStrings'         
 ## oneNumericMeasure and oneCategoryMeasure build on generalMeasure schema
   generalMeasure:
     type: object
@@ -192,7 +174,7 @@ definitions:
         type: string
       measureReferences:
       ## put the publications/websites for more info here
-        $ref: '#/definitions/staticRefObj'     
+        $ref: '#/definitions/referenceObj'     
   oneNumericMeasure:
 #     Numeric measures have additional required info, like range and the 
 #     meaning of directions. Value is required to be a number. 
@@ -292,7 +274,7 @@ definitions:
             forward|reverse:
               type: string     
   ## CONTEXT DATA OBJECT
-  oneContextObj:     
+  contextObj:     
     description: >-
       Object (Python-dict-like). Keys specify the type of context. Values could 
       be static (not dependent on response), take on a specific value in the 
@@ -345,9 +327,8 @@ definitions:
         description: >-
           Keyword noting what the knowledge-source/API/resource did to
           build the association from data/knowledge. Current possible values 
-          include ingest, NLP, manual_curation, propagate_from_phenotype, 
-          propagate_from_protein_variant, propagate_from_seq_variant, 
-          submission. 
+          include ingest, NLP, manual_curation, shared_phenotype, shared_disease, 
+          shared_variant, submission, orthology_mapping... 
         type: string
         ## manual_curation means people are trained to make these annotations 
         ##   (aka curators) and/or submissions are REVIEWED by curators before entering KB
@@ -356,7 +337,7 @@ definitions:
       methodReferences:
       ## put the publications/websites that have more info on how annotations were made
       ##  can be what was used to set/write method, descriptiveInfo, sourceContext...
-        $ref: '#/definitions/staticRefObj'  
+        $ref: '#/definitions/referenceObj'  
       descriptiveInfo:      
         description: >-
           Free-text description of what the source did to create the associations.
@@ -366,4 +347,4 @@ definitions:
       sourceContext:
         ## used ONLY when every association retrieved from this API is restricted 
         ##   in how it should be used or interpreted. 
-        $ref: '#/definitions/oneContextObj'
+        $ref: '#/definitions/contextObj'

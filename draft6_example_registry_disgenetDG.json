@@ -62,7 +62,7 @@
           },
           "websites": {
             "instructions": "Create an array of webpage URLs that follow the template. There should be a  separate URL for each disease ID (element of disease). Each JSON record should have one source and one gene_id (aka no need for separate URLs).  Result is an edge property named websites -> value is this array of strings. ",
-            "template": "https://www.disgenet.org/browser/0/1/0/{disease}/geneid__{gene}-source__{source}/ ",
+            "template": "https://www.disgenet.org/browser/0/1/1/{disease}/geneid__{gene}-source__{source}/ ",
             "templateKeys": {
               "source": "disgenet.genes_related_to_disease.source",
               "gene": "disgenet.genes_related_to_disease.gene_id",
@@ -84,7 +84,9 @@
             "name": "DisGeNET gene-disease association score",
             "responseField": "disgenet.genes_related_to_disease.score",
             "measureReferences": {
-              "websites": "https://www.disgenet.org/dbinfo#section31"
+              "websites": {
+                "value": "https://www.disgenet.org/dbinfo#section31"
+              }
             },
             "range": {
               "minExclusive": 0,
@@ -98,7 +100,9 @@
             "name": "DisGeNET evidence index",
             "responseField": "disgenet.genes_related_to_disease.EI",
             "measureReferences": {
-              "websites": "https://www.disgenet.org/dbinfo#section36"
+              "websites": {
+                "value": "https://www.disgenet.org/dbinfo#section36"
+              }
             },
             "missingValueMeaning": "This measure is calculated from BeFree and PsyGeNET info.  If the association was not found in those sources, this  measure likely was not calculated. ",
             "range": {
@@ -114,7 +118,9 @@
             "ontologyTerm": "SIO:001351",
             "responseField": "disgenet.genes_related_to_disease.DSI",
             "measureReferences": {
-              "websites": "https://www.disgenet.org/dbinfo#section33"
+              "websites": {
+                "value": "https://www.disgenet.org/dbinfo#section33"
+              }
             },
             "missingValueMeaning": "This measure is calculated when a gene is associated with  one or more diseases. If the value is missing, this gene is  annotated only to phenotypes. ",
             "range": {
@@ -130,7 +136,9 @@
             "ontologyTerm": "SIO:001352",
             "responseField": "disgenet.genes_related_to_disease.DPI",
             "measureReferences": {
-              "websites": "https://www.disgenet.org/dbinfo#section34"
+              "websites": {
+                "value": "https://www.disgenet.org/dbinfo#section34"
+              }
             },
             "missingValueMeaning": "This measure is calculated when a gene is associated with  one or more diseases in MeSH disease classes. If the value  is missing, this gene is annotated only to phenotypes OR the diseases do not map to any MeSH classes. ",
             "range": {
