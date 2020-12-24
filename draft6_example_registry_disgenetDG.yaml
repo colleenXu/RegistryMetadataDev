@@ -1,108 +1,123 @@
-## example of using the x-bte-association-retrieval schema (draft6_schema_x-bte-association-retrieval.yaml)
-##   to write a registry entry for MyDisease.info yaml, disease -> gene operation (which uses disgenet)
-## notes about this specific registry entry/operation: 
-##   no context/relevance info needed 
-##   JSON response fields that we didn't use: year first reported (YearInitial) and year last reported (YearFinal)
+## example of using the x-bte-association-retrieval schema 
+##   to write a registry entry for querying MyDisease.info API 
+##   with diseases -> genes 
+## notes about this specific registry entry: 
+##   none of the operations have restrictions (context/relevance)
+##   some API/JSON-response fields weren't used (YearInitial, YearFinal for
+##   the years first and last reported)
+##   MyDisease.info is a complex API with a lot of operations/sources
 
-## notes for CX:
-##   this can be a new metadata extension, so it doesn't rewrite and break x-bte-kgs-association dependent code
-##   there is likely 1+ other schema/examples to write. One for what the association/edge looks like after using this registry entry to structure and add info, one for the provenance mapping file?  
-## future?: have a script to handle automatic updating and trigger manual review of metadata, including mapping file, when DisGeNET link updates. Kevin notes that a complex script to figure out exactly what needs to be reviewed would be hard. 
+## notes for developers:
+##   this registry file is linked to other files: provenance-mapping files, 
+##     BTE code files that post-process the API/JSON-response using the
+##     registry and provenance-mapping files, and examples of what the
+##     post-processed associations look like. 
+##   in the future? have a script alerting developer of DisGeNET update.
+##     Workflow is then to review the new DisGeNET data, change the pipeline
+##     to update myDisease.info API if needed, AND update the metadata files
+##     (the registry + linked files described above) as-needed. 
+## this is 79 char long #######################################################
 
-## old advice on what this file looks like 
-## note from Kevin: object-oriented format involves putting related things together.
-##   can always unpack objects later and parse to make a table w/ columns/edge properties. 
-## note from Kevin: use value/responseField consistently in this 
-## note from chunlei: try the $ notation. tried, removed, but maybe add back? 
-
-components:        
-  x-bte-association-retrieval:  ## info for this type of operation. 
-  ## each obj below describes one operation
-    disease-gene1:
-      queryInfo:
+components:      
+  ## operations to query KPs for associations go under this x-bte extension
+  x-bte-association-retrieval:  
+  ## each object below describes one operation 
+    disease-gene1:  ## name for this particular operation
+      queryInfo:  ## required
         supportBatch: true
         inputSeparator: ","
         parameters:
-          fields: disgenet.genes_related_to_disease
+          fields: "disgenet.genes_related_to_disease"
         requestBody:
           body:     
             q: "{inputs[0]}"
             scopes: "mondo.xrefs.umls, disgenet.xrefs.umls"
-          header: application/x-www-form-urlencoded
-      inputs:  
-        - id: UMLS
-          semantic: Disease
-          ## ?? need to check pre-processing code to check if this is right
-          requiresPrefix: false
-      outputs:    
-        - id: NCBIGene
-          semantic: Gene  
-          containsPrefix: false
-          responseField: "disgenet.gene_related_to_disease.gene_id"
-      ## WHAT the relationship is                    
+          header: "application/x-www-form-urlencoded"
+      inputs:  ## required
+      - id: UMLS
+        semantic: Disease
+        ## ?? need to check pre-processing code to check if this is right
+        requiresPrefix: false
+      outputs:   ## required
+      - id: NCBIGene
+        semantic: Gene  
+        containsPrefix: false
+        responseField: "disgenet.gene_related_to_disease.gene_id"
+      ## WHAT the relationship is
       predicateInfo:  
-        ## for this example, biolink / id / label are static, so they have a value field
-        ##   see the schema for the other situations and their schema. 
-        biolink: 
-          value: "biolink:related_to" 
-          ## TRAPI predicate field seems to require "biolink:" prefix        
-        id: 
-          value: "SIO:001403"  ## same as TRAPI/biolink relation field
+      ## biolink / id / label are static and set here in the registry, so
+      ##   the staticValue schema is used. 
+      ## see the schema for other possible situations 
+        biolink:  ## similar to TRAPI/biolink predicate field
+          value: "related_to"  ## ?? 'biolink:' prefix required
+        id:  ## similar to TRAPI/biolink relation field
+          value: "SIO:001403" 
         label: 
           value: "SIO:is_associated_with"
-        nodesConflated:  ## optional field
-        ## DisGeNET disease-gene relationships conflate diseases/phenotypes and genes/gene-products      
+        nodesConflated:  ## optional 
+        ## note from CX: DisGeNET disease-gene relationships appear to 
+        ##   conflate the biolink entity classes 
+        ## BTE could use this to automatically pick Disease AND 
+        ##   PhenotypicFeature Hint objects that match the input node lookup
+        ##   string. Or pick Gene AND GeneProduct Hint objects that match the 
+        ##   output node name...
         - original: Disease
           conflated: PhenotypicFeature
           where: DisGeNET
         - original: Gene
           conflated: GeneProduct
           where: DisGeNET   
-      references:  ## IMPORTANT: users use this as evidence 
+      references:  ## optional, include when possible: important user need 
         publications:
-        ## each key is an ID namespace
-        ## for this example, the PMIDs come from the JSON response field  
-        ##   see the schema for the other situations and their schema. 
+        ## the supporting publications are PMIDs (no prefixes) stored as 
+        ##   an array of ints in the pubmed field of the API/JSON-response
+        ## uses the takesOnResponseValue schema 
+        ##   since the formatting described above is fine
+        ## see the schema for other possible situations and the 
+        ##   post-processed association schema for what formatting is fine
           pmid: 
-            responseField: "disgenet.genes_related_to_disease.pubmed"  
-        websites:   
+            responseField: "disgenet.genes_related_to_disease.pubmed"
+        websites:    ## uses the transformUsingTemplate schema
+        ## see the schema for other possible situations
           instructions: >-
-            Create an array of webpage URLs that follow the template. There should be a 
-            separate URL for each disease ID (element of disease). Each JSON record
-            should have one source and one gene_id (aka no need for separate URLs). 
-            Result is an edge property named websites -> value is this array of strings. 
-          template: >-
-            https://www.disgenet.org/browser/0/1/1/{disease}/geneid__{gene}-source__{source}/ 
-          templateKeys:  ## map the template fields above to response fields or to variables
+            Create an array of one or more strings using the template. There
+            should be a separate URL for each disease ID. Each association
+            should have one source and one gene ID. Result should be a key
+            (websites) with a value (the array of string website URLs)
+          ## this should be parsed as one string with no spaces
+          template:
+            "https://www.disgenet.org/browser/0/1/1/{disease}/\
+            geneid__{gene}-source__{source}/"
+          templateKeys:  ## keywords in template
             source: "disgenet.genes_related_to_disease.source"
             gene: "disgenet.genes_related_to_disease.gene_id"
-            ## the UMLS Disease IDs used as input to the query, as an array of strings
             disease: "inputs[0]"
+            ## the UMLS Disease IDs (no prefix), used as input to the query
+            ## should be an array of one or more strings (disease IDs)
           bteCode: ""  
-          ## link to the github BTE file where we post process to build this
-      provenance:  
-      ## organized this way because there can be provenance for later operations like scoring/overlay 
-        associationRetrieval: 
-          ## currently involves a good amount of processing/mapping values from response fields. 
-          ## This is an issue with APIs/knowledge-sources that aggregate info from many other sources. 
-          instructions: >- 
-            Map from the specific association JSON-record response-value to the provenance model 
-            (an array of objects describing sources and how they made the association). This mapping 
-            is stored in the provenanceMapping object in the mappingFile JSON. Result is an edge 
-            property named provenance, which has a key called associationRetrieval -> 
-            value is one array of objects. 
-          ## currently assuming only one field used. Need to change schema if this changes. 
-          responseField: "disgenet.genes_related_to_disease.source"
-          mappingFile: "draft6_disgenetDGGD_mappingfile.yaml"  
-          ## could use mappingFile to get source info for metaKG
-          bteCode: ""  
-          ## link to the github BTE file where we post process to build this
-      numericMeasures:
-      ## gives info about the measure and what response field to use to retrieve it 
+          ## link to the github code that post-processes API/JSON-response 
+          ##   using the registry info 
+      provenance:  ## uses the transformResponseValues schema
+      ## see the schema for other possible situations 
+        instructions: >- 
+          Map from a specific association/JSON-record and its value in the
+          source field to an array of objects describing the sources (standard
+          provenance model). This mapping is stored in the mappingFile JSON
+          within the provenanceMapping object. Result should be a key
+          (provenance) with a value (the array of objects describing the
+          sources)
+        responseFieldsUsed: "disgenet.genes_related_to_disease.source"
+        mappingFile: "draft6_example_disgenetDGGD_provenance.yaml"  
+        ## ?? use mappingFile to get source info for metaKG
+        bteCode: ""  
+        ## link to the github code that post-processes API/JSON-response 
+        ##   using the registry info 
+      numericMeasures:  
+      ## describes association-related numeric measures 
       - name: "DisGeNET gene-disease association score"
         responseField: "disgenet.genes_related_to_disease.score"
         measureReferences:
-          websites: 
+          websites:   ## uses staticValue schema
             value: "https://www.disgenet.org/dbinfo#section31"
         range:
           minExclusive: 0
@@ -112,12 +127,12 @@ components:
       - name: "DisGeNET evidence index"
         responseField: "disgenet.genes_related_to_disease.EI"
         measureReferences:
-          websites: 
+          websites:      ## uses staticValue schema
             value: "https://www.disgenet.org/dbinfo#section36"
         missingValueMeaning: >-
-          This measure is calculated from BeFree and PsyGeNET info. 
-          If the association was not found in those sources, this 
-          measure likely was not calculated. 
+          This measure is calculated from BeFree and PsyGeNET info. If the
+          association was not found in those sources, this measure was not
+          calculated
         range:
           minExclusive: 0
           maxInclusive: 1
@@ -127,12 +142,12 @@ components:
         ontologyTerm: 'SIO:001351'
         responseField: "disgenet.genes_related_to_disease.DSI"
         measureReferences:
-          websites: 
+          websites:       ## uses staticValue schema
             value: "https://www.disgenet.org/dbinfo#section33"   
         missingValueMeaning: >-
-          This measure is calculated when a gene is associated with 
-          one or more diseases. If the value is missing, this gene is 
-          annotated only to phenotypes. 
+          This measure is calculated when a gene is associated with one or
+          more diseases. If the value is missing, this gene is annotated only
+          to phenotypes
         range:
           minExclusive: 0
           maxInclusive: 1
@@ -142,13 +157,13 @@ components:
         ontologyTerm: 'SIO:001352'
         responseField: "disgenet.genes_related_to_disease.DPI"
         measureReferences:
-          websites: 
+          websites:        ## uses staticValue schema
             value: "https://www.disgenet.org/dbinfo#section34"    
         missingValueMeaning: >-
-          This measure is calculated when a gene is associated with 
-          one or more diseases in MeSH disease classes. If the value 
-          is missing, this gene is annotated only to phenotypes OR
-          the diseases do not map to any MeSH classes. 
+          This measure is calculated when a gene is associated with one or
+          more diseases in MeSH disease classes. If the value is missing, this
+          gene is annotated only to phenotypes OR the associated diseases do
+          not map to any MeSH classes
         range:
           minExclusive: 0
           maxInclusive: 1
