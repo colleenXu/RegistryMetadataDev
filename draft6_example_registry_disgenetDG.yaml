@@ -107,7 +107,7 @@ components:
           (provenance) with a value (the array of objects describing the
           sources)
         responseFieldsUsed: "disgenet.genes_related_to_disease.source"
-        mappingFile: "draft6_example_disgenetDGGD_provenance.yaml"  
+        mappingFile: "draft6_example_mappingFile_disgenetDG.yaml"  
         ## ?? use mappingFile to get source info for metaKG
         bteCode: ""  
         ## link to the github code that post-processes API/JSON-response 
