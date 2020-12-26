@@ -1,0 +1,291 @@
+## example of using the x-bte-association-retrieval schema 
+##   to write registry entries for querying Automat CORD19 Scibite API
+##   (current registry's 6 operations)
+## notes about this specific registry entry: 
+##   some API/JSON-response fields weren't used 
+##   Automat CORD19 Scibite API has a lot of operations...
+
+## notes for developers:
+##   this registry file is linked to other files: BTE code files that
+##   post-process the API/JSON-response using the registry and examples of
+##   what the post-processed associations look like. 
+## this is 79 char long #######################################################
+
+## notes for CX:
+## ?? changed the response fields and input/output handling; REVIEW WITH KEVIN
+## Current registry file:
+## https://github.com/NCATS-Tangerine/translator-api-registry/blob/master/scibite/smartapi.yml#L122
+
+## other notes for RENCI:
+## ?? this API has other operations but those aren't set up yet,
+##   so I don't have final queryInfo or API/JSON-response fields
+## ?? references is an issue: there is a publications field but it appears to
+##   always be empty. So while this is made with NLP on CORD19, users can't
+##   see the actual publication the hit is from...there's also no association
+##   website to refer users to...
+## ?? I see inverse-relationships in the responses (ex: see disease -> gene
+##   results in the gene2disease operation example query response)
+## ?? look at stuff I'm not sure of in the operations below
+
+components:      
+  x-bte-association-retrieval:  
+    gene2chemical:  ## 1
+    ## current API response example:
+    ## https://automat.renci.org/cord19-scibite/gene/chemical_substance/NCBIGene:1803   
+      queryInfo:  ## required
+        supportBatch: false
+        parameters:
+          geneid: "NCBIGene:{inputs[0]}"
+      inputs:  ## required
+      - id: NCBIGene
+        semantic: Gene
+        requiresPrefix: true
+      outputs:   ## required
+      ## I'm not sure if they give CHEMBL.COMPOUND as primary ID anymore
+      - id: CHEBI
+        semantic: ChemicalSubstance  
+        containsPrefix: true
+        responseField: "[2].id"
+      predicateInfo:  
+        biolink:  ## currently the biolink?? related_to
+          responseField: "[1].relation_label"  
+        id:   ## currently SEMMEDDB:ASSOCIATED_WITH
+          responseField: "[1].relation"      
+        nodesConflated:  ## optional 
+        - original: Gene
+          conflated: GeneProduct
+          where: "Automat CORD19 Scibite API"
+      ## ?? not sure if this provenance is correct
+      provenance:  ## reused; same for all operations
+        $ref: '#/definitions/automatProvenance'
+      ## ?? not sure if any of this below is current since I don't know enough
+      ##   about these measures
+      numericMeasures:    ## reused; same for all operations
+        $ref: '#/definitions/automatNumbers'
+      ## setting this since the associations are from coronavirus-specific
+      ##   publications (perhaps non-related associations are less
+      ##   trustworthy?)   
+      contextRelevance:     ## reused; same for all operations
+        $ref: '#/definitions/automatCORD19Context'          
+    gene2disease:  ## 2
+    ## current API response example:
+    ## https://automat.renci.org/cord19-scibite/gene/disease/NCBIGene:1803
+      queryInfo:  
+        supportBatch: false
+        parameters:
+          geneid: "NCBIGene:{inputs[0]}"
+      inputs:  
+      - id: NCBIGene
+        semantic: Gene
+        requiresPrefix: true
+      outputs:   
+      ## I'm not sure if they give DOID as primary ID anymore
+      - id: MONDO
+        semantic: Disease  
+        containsPrefix: true
+        responseField: "[2].id"
+      predicateInfo:  
+        biolink: 
+          responseField: "[1].relation_label"  
+        id:   
+          responseField: "[1].relation"      
+        nodesConflated:  
+        - original: Gene
+          conflated: GeneProduct
+          where: "Automat CORD19 Scibite API"
+        ## since MONDO kinda includes both
+        - original: Disease
+          conflated: PhenotypicFeature
+          where: "Automat CORD19 Scibite API"
+      provenance:  
+        $ref: '#/definitions/automatProvenance'
+      numericMeasures:    
+        $ref: '#/definitions/automatNumbers'
+      contextRelevance:    
+        $ref: '#/definitions/automatCORD19Context'          
+    chemical2gene:  ## 3
+    ## current API response example:
+    ## https://automat.renci.org/cord19-scibite/chemical_substance/gene/CHEBI:46195        
+      queryInfo:  
+        supportBatch: false
+        parameters:  ## ??ask Kevin: diff format than the gene input ones above
+          chebi: "{inputs[0]}"
+      inputs:  
+      - id: CHEBI
+        semantic: ChemicalSubstance
+        requiresPrefix: true
+      outputs:   
+      - id: NCBIGene
+        semantic: Gene  
+        containsPrefix: true
+        responseField: "[2].id"
+      predicateInfo:  
+        biolink:  
+          responseField: "[1].relation_label"  
+        id:  
+          responseField: "[1].relation"      
+        nodesConflated:  
+        - original: Gene
+          conflated: GeneProduct
+          where: "Automat CORD19 Scibite API"
+      provenance:  
+        $ref: '#/definitions/automatProvenance'
+      numericMeasures:    
+        $ref: '#/definitions/automatNumbers'
+      contextRelevance:   
+        $ref: '#/definitions/automatCORD19Context'     
+    chemical2disease:  ## 4
+    ## current API response example:
+    ## https://automat.renci.org/cord19-scibite/chemical_substance/disease/CHEBI:46195
+      queryInfo:  
+        supportBatch: false
+        parameters:  ## ??ask Kevin: diff format than the gene input ones above
+          chebi: "{inputs[0]}"
+      inputs:  
+      - id: CHEBI
+        semantic: ChemicalSubstance
+        requiresPrefix: true
+      outputs:  
+      ## I'm not sure if they give DOID as primary ID anymore
+      - id: MONDO
+        semantic: Disease  
+        containsPrefix: true
+        responseField: "[2].id"   
+      predicateInfo:  
+        biolink:  
+          responseField: "[1].relation_label"  
+        id:   
+          responseField: "[1].relation"      
+        nodesConflated:  
+        ## since MONDO kinda includes both
+        - original: Disease
+          conflated: PhenotypicFeature
+          where: "Automat CORD19 Scibite API"  
+      provenance:  
+        $ref: '#/definitions/automatProvenance'
+      numericMeasures:    
+        $ref: '#/definitions/automatNumbers'
+      contextRelevance:    
+        $ref: '#/definitions/automatCORD19Context'        
+    disease2gene:  ## 5
+    ## current API response example:
+    ## https://automat.renci.org/cord19-scibite/disease/gene/MONDO:0005016
+      queryInfo:  
+        supportBatch: false
+        parameters:   ## ??ask Kevin: diff format than the gene input ones above
+          mondo: "{inputs[0]}"    
+      inputs: 
+      - id: MONDO
+        semantic: Disease
+        requiresPrefix: true
+      outputs:  
+      - id: NCBIGene
+        semantic: Gene  
+        containsPrefix: true
+        responseField: "[2].id"  
+      predicateInfo:  
+        biolink:  
+          responseField: "[1].relation_label"  
+        id:  
+          responseField: "[1].relation"      
+        nodesConflated:  
+        - original: Gene
+          conflated: GeneProduct
+          where: "Automat CORD19 Scibite API"
+        ## since MONDO kinda includes both
+        - original: Disease
+          conflated: PhenotypicFeature
+          where: "Automat CORD19 Scibite API"  
+      provenance:  
+        $ref: '#/definitions/automatProvenance'
+      numericMeasures:    
+        $ref: '#/definitions/automatNumbers'
+      contextRelevance:    
+        $ref: '#/definitions/automatCORD19Context'
+    disease2chemical:    ## 6
+    ## current API response example:
+    ## https://automat.renci.org/cord19-scibite/disease/chemical_substance/MONDO:0005016
+      queryInfo:  
+        supportBatch: false
+        parameters:   ## ??ask Kevin: diff format than the gene input ones above
+          mondo: "{inputs[0]}"    
+      inputs:  
+      - id: MONDO
+        semantic: Disease
+        requiresPrefix: true
+      outputs:   
+      ## I'm not sure if they give CHEMBL.COMPOUND as primary ID anymore
+      - id: CHEBI
+        semantic: ChemicalSubstance  
+        containsPrefix: true
+        responseField: "[2].id"
+      predicateInfo:  
+        biolink:  
+          responseField: "[1].relation_label"  
+        id:   
+          responseField: "[1].relation"      
+        nodesConflated:  
+        ## since MONDO kinda includes both
+        - original: Disease
+          conflated: PhenotypicFeature
+          where: "Automat CORD19 Scibite API"  
+      provenance: 
+        $ref: '#/definitions/automatProvenance'
+      numericMeasures:    
+        $ref: '#/definitions/automatNumbers'
+      contextRelevance:    
+        $ref: '#/definitions/automatCORD19Context'    
+## this is 79 char long #######################################################  
+definitions:
+  ## ?? not sure if this provenance is correct
+  automatProvenance:
+  - name: "Automat CORD19 Scibite API"
+    sourceType: NLP
+    ## https://automat.renci.org/#/cord19-scibite/about_about_get has no
+    ##   version. but API/JSON-response has edge_source v2 and current
+    ##   registry file, automat.renci.org both say v2...
+    version: "v2"
+    versionType: "version_number"
+    method: ingest
+    ## comes from reading 
+    ## https://tarheelstogether.unc.edu/robokop-technology-offers-faster-easier-exploration-of-emerging-covid-19-research/
+    descriptiveInfo: >- 
+      Downloaded the Neo4J dump of the Automat CORD19 Scibite Neo4J
+      knowledgebase. The knowledgebase associations represent frequent
+      co-occurrence of the biomedical entities in the CORD19 literature.
+      Scibite NLP was used for entity resolution
+  - name: "CORD19 Dataset"
+    sourceType: publications
+    ## Automat doesn't give version info for this
+    ## no method; it's a text source
+    sourceReferences: 
+      websites:   
+        value: "https://www.semanticscholar.org/cord19/"
+    descriptiveInfo: >- 
+      Provides COVID-19 and coronavirus-related research articles (and
+      standardized article metadata). Publications come from Pubmed (PMC open
+      access corpus), WHO (a corpus maintained by them), bioRxiv, and medRxiv
+      pre-prints
+  automatNumbers:     
+  - name: "Automat enrichment p-value"
+    responseField: "[1].enrichment_p"
+    range:
+      minExclusive: 0
+      maxInclusive: 1
+    directionMeaning:  
+    ## small p-value means these two entities co-occur more often/consistently
+    ##   than expected?
+      smaller: more_consistent
+  - name: "Automat publications ratio"
+    responseField: "[1].num_publications"
+    range:
+      minExclusive: 0
+      maxInclusive: 1
+    directionMeaning:  
+    ## large number means these entities co-occur in more publications? 
+      larger: more_evidence
+  automatCORD19Context:
+    diseaseSpecific:    ## using staticValue schema
+      value:
+      - "MONDO:0020753"  ## coronavirus infection
+      - "MONDO:0100096"  ## COVID-19            

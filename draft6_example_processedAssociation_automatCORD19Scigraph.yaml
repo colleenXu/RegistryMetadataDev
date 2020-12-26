@@ -1,0 +1,71 @@
+## example of what one disease -> chemical_substance association could look
+##   like, after BTE post-processing a query's API/JSON-response using the
+##   registry metadata 
+
+## the specific disease -> chemical_substance association modeled: the SECOND
+##   JSON record in the API/JSON-response here:
+## https://automat.renci.org/cord19-scigraph/disease/chemical_substance/MONDO:0005016
+
+## CX notes:
+## an ongoing issue: all the metadata for the operation in the registry file 
+##   likely DOESN'T NEED TO HANG OFF every single association 
+## go to the schema for notes on what to leave off and keep
+## this is 79 char long #######################################################
+
+  predicateInfo:  ## need the specific predicates for this edge 
+  ## the registry file told BTE what JSON fields to use
+  ## then BTE inserts data from that field into the metadata structure
+    biolink: "related_to"
+    id: "SEMMEDDB:ASSOCIATED_WITH"
+  provenance:  ## need the specific prov. for this edge 
+  ## It's a lot to have on every edge but saving records by uri and then 
+  ##   looking them up later may be harder.  
+  ## the registry file contains this array (it's static). BTE inserts it here
+    associationRetrieval:
+    - name: "Automat CORD19 Scigraph API"
+      sourceType: NLP
+      version: "v11"
+      versionType: "version_number"
+      method: ingest
+      descriptiveInfo: >- 
+        Downloaded the Neo4J dump of the Automat CORD19 Neo4J knowledgebase.
+        The knowledgebase associations represent frequent co-occurrence of the
+        biomedical entities in the CORD19 literature. Scigraph NLP was used for
+        entity resolution
+    - name: "CORD19 Dataset"
+      sourceType: publications
+      sourceReferences: 
+      ## BTE should use the static values from the registry file and unnest
+        websites: "https://www.semanticscholar.org/cord19/"
+      descriptiveInfo: >- 
+        Provides COVID-19 and coronavirus-related research articles (and
+        standardized article metadata). Publications come from Pubmed (PMC open
+        access corpus), WHO (a corpus maintained by them), bioRxiv, and medRxiv
+        pre-prints
+  numericMeasures:   ## need the specific measure values for this edge 
+  ## It's a lot to have on every edge but saving records by uri and then 
+  ##   looking them up later may be harder.
+  ## the registry file told BTE what JSON field to use
+  ## then BTE inserts data from that field into a new sub-field (value)
+  ##   in the metadata structure
+  - name: "Automat enrichment p-value"
+    value: 7.240367640343684e-8
+    range:
+      minExclusive: 0
+      maxInclusive: 1
+    directionMeaning:  
+      smaller: more_consistent
+  - name: "Automat publications ratio"
+    value: 0.019792206568345662
+    range:
+      minExclusive: 0
+      maxInclusive: 1
+    directionMeaning:  
+      larger: more_evidence
+  ## ??dunno if contextRelevance has to be on the edge, or if it's just to use
+  ##   pre-query for BTE to decide whether to query it or not
+  contextRelevance:  ## in this case, this applies to all edges from this API
+  ## BTE should use the static values from the registry file and unnest
+    diseaseSpecific:   
+    - "MONDO:0020753"  ## coronavirus infection
+    - "MONDO:0100096"  ## COVID-19  

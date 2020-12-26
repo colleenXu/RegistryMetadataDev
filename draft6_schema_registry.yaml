@@ -48,7 +48,7 @@ definitions:
     - inputs
     - outputs
     - predicateInfo
-    ## strongly recommended: provenance, references
+    ## strongly recommended: references, provenance
     ## use as-needed: numericMeasures, categoryMeasures, contextRelevance
     additionalProperties: False
     properties:
@@ -168,6 +168,12 @@ definitions:
         items:
           $ref: '#/definitions/oneCategoryMeasure'    
       ## WHERE and WHEN is this information valid/relevant
+      ## ??seems like contextRelevance will be on every edge, since sometimes
+      ##   this will be dynamic (depends on the specific association).
+      ## however, sometimes it will be static since this is a restriction on
+      ##   all associations from this API...then BTE could decide whether
+      ##   to query it or not in the pre-query phase? Not sure. 
+      ##   And that static info could go into provenance -> api's context...
       contextRelevance:
         $ref: '#/definitions/contextObj'  
       ## may set up fields later for other info? like what was used for 

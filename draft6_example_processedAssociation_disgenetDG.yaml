@@ -13,6 +13,7 @@
 ##   likely DOESN'T NEED TO HANG OFF every single association 
 ## go to the schema for notes on what to leave off and keep
 ## this is 79 char long #######################################################
+
   predicateInfo:  ## need the specific predicates for this edge 
   ## use the static values from the registry file and unnest
     biolink: "related_to"
