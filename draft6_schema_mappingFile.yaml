@@ -1,9 +1,10 @@
 ## notes for developers:
-##  use this to validate mappingFile linked by a registry file
-##  this schema has "$ref" that need to be expanded in use. 
-##    Python has the library jsonrefs that can be used for this. 
-##  uses the staticValue sub-schema like the registry file
-##  from Andrew Su: for now, require less 
+## - use this to validate mappingFile linked by a registry entry
+## - this schema has "$ref" that need to be expanded in use.
+##   Python has the library jsonref that can be used for this. 
+## - this schema MUST have type:object/properties for each object. When
+##   removed, the validation will not work correctly. 
+## - from Andrew Su: for now, require less 
 ## this is 79 char long #######################################################
 
 title: Schema for mappingFiles linked to x-bte-association-retrieval
@@ -29,7 +30,7 @@ properties:
           $ref: '#/definitions/oneProvenanceUnit'    
 definitions:
 ## referenceObj and contextObj differ from their corresponding registry schemas;
-##   they only allow staticValue format 
+##   they only allow staticValue sub-schema
   staticValue:
     description: >-
       Info is not dependent on API/JSON-response. In this situation, a static
@@ -53,11 +54,9 @@ definitions:
     type: object
     additionalProperties: False
     minProperties: 1
-    ## only have a referenceObj if you're going to provide info...
     properties: 
       publications:
         type: object
-        ## only have a publications if you're going to provide info...
         minProperties: 1
         patternProperties:
         ## keys are ID namespace, all-lowercase. 
@@ -136,10 +135,10 @@ definitions:
           happened
         type: string        
       sourceContext:
-        ## used ONLY when every association retrieved from this operation
-        ##   is restricted in how it should be used or interpreted. 
+      ## used when the source was species-specific, disease-specific, etc
+      ## associations from the source could still be widely applicable
         $ref: '#/definitions/contextObj'  
-  ## CONTEXT DATA OBJECT. 
+  ## CONTEXT DATA OBJECT
   contextObj:     
     description: >-
       Object, Python dict-like. Keys specify the type of context. Values
@@ -152,7 +151,6 @@ definitions:
     type: object
     additionalProperties: False
     minProperties: 1
-    ## if contextObj is present, require it to have some info inside
     patternProperties:
       ## cell line info counts as experimentalSpecific
       taxonSpecific|diseaseSpecific|cohortSpecific|experimentalSpecific:

@@ -1,16 +1,14 @@
 ## notes for developers:
-##  use this to validate registry files
-##  this schema has "$ref" that need to be expanded in use.
-##    Python has the library jsonref that can be used for this. 
-##  this schema MUST have the object/properties/nested-object/properties
-##    structure (aka the properties keyword cannot be removed). When removed,
-##    the validation will not work correctly. 
-##  x-bte-association-retrieval can be a new metadata extension for now, so it 
+## - use this to validate registry files
+## - this schema has "$ref" that need to be expanded in use.
+##   Python has the library jsonref that can be used for this. 
+## - this schema MUST have type:object/properties for each object. When
+##   removed, the validation will not work correctly. 
+## - x-bte-association-retrieval can be a new metadata extension for now, so it 
 ##    doesn't break code dependent on the current x-bte-kgs-association 
 ##    extension
-##  from Andrew Su: for now, require less. Don't require fields to be present
-##    when they'll be empty in some situations
-##  from Chunlei Wu: prefer x-bte-kgs-association-dev name to 
+## - from Andrew Su: for now, require less.
+## - from Chunlei Wu: prefer x-bte-kgs-association-dev name to 
 ##    x-bte-association-retrieval rename CX is using
 ## this is 79 char long #######################################################
 
@@ -34,11 +32,10 @@ properties:
     properties:
       x-bte-association-retrieval:
         type: object
-        ## no naming format, but each operation must fit the sub-schema
-        minProperties: 1
         ## if x-bte-association-retrieval is present, have at least one obj
+        minProperties: 1
         patternProperties:
-          .:
+          .:          ## no naming format
             $ref: '#/definitions/oneAssociationRetrievalObj'
 definitions:
   oneAssociationRetrievalObj:
@@ -54,14 +51,14 @@ definitions:
     properties:
       queryInfo:
         description: >- 
-          Contains info on the query (API call) for this operation. The OpenAPI
-          /paths/operations may have specific fields (like parameters,
-          responseBody, etc.), and these can be set here
+          Contains info on the query (API call) for this operation. The
+          OpenAPI /paths/operations may have specific fields (like
+          parameters, responseBody, etc.), and these can be set here
         type: object
-        ## Andrew Su: if operation does not supportBatch, then this field
-        ##   can be absent. It doesn't need to be required. 
-        ## Kevin: can add simple field typing, but cannot require them 
-        ## ?? set minProperties: 1? not sure
+        ## ?? maybe set minProperties: 1
+        ## from Andrew Su: don't require supportBatch 
+        ## Kevin: can add simple field typing, but cannot require parameters
+        ##   or requestBody
         properties:
           supportBatch:
             type: boolean
@@ -71,7 +68,7 @@ definitions:
             type: object
           requestBody:
             type: object    
-      ## ?? incorporate nodesConflated properties into inputs/outputs?
+      ## ?? incorporate nodesConflated properties into inputs/outputs
       inputs:
         description: >-
           Array of objects (Python list-of-dict-like). Describes valid inputs
@@ -89,17 +86,17 @@ definitions:
         minItems: 1
         items:
           $ref: '#/definitions/outputInfo'
-      ## WHAT the relationship is                    
+      ## WHAT the relationship is
       predicateInfo:
         type: object
         required:
           - biolink
         additionalProperties: False
         properties:
-        ## biolink, id, label may be in the API/JSON-response or may not.
+        ## biolink, id, label may be in the API/JSON-response or may not
         ## Choose a schema to handle the situation 
           biolink:
-          ## biolink predicate that best describes the association.
+          ## biolink predicate that best describes the association
           ## similar to the biolink/TRAPI predicate 
             oneOf:
             - $ref: '#/definitions/staticValue'
@@ -115,18 +112,16 @@ definitions:
             - $ref: '#/definitions/takesOnResponseValue'
             - $ref: '#/definitions/transformResponseValues'
           label:
-          ## Human-readable label for id field above. 
+          ## Human-readable label for id field above
             oneOf:
             - $ref: '#/definitions/staticValue'
             - $ref: '#/definitions/takesOnResponseValue'
             - $ref: '#/definitions/transformResponseValues'
           nodesConflated:
-          ## ?? incorporate into inputs/outputs fields
+          ## ?? incorporate into inputs/outputs 
           ## currently assuming it is static and doesn't depend on response 
-          ## BTE could use this to automatically pick Hint objects w/ 
-          ##   MULTIPLE Biolink entity classes that match the input node
-          ##   lookup string (before-query input node resolution) or the 
-          ##   output node name (post-processing output node resolution)?
+          ## ?? BTE could use this to automatically pick multiple types of
+          ##    Hint obj for input or output?
             description: >-
               Array of objects (Python list-of-dict-like). Used when the
               associations conflate the Biolink entity classes/node-types of
@@ -136,22 +131,22 @@ definitions:
             minItems: 1
             items:
               $ref: '#/definitions/conflatedNode'  
-      references:  ## optional, include when possible: important user need
+      references:  ## optional, include when possible
       ## includes supporting publications and source websites 
-      ##   showing the association
+      ##   showing the association: important user need
         $ref: '#/definitions/referenceObj'        
-      ## WHERE the association and its related info come from, and HOW   
+      ## WHERE the association and its related info come from, and HOW
       provenance:
         oneOf:
-        - $ref: '#/definitions/oneProvenanceList'  
+        - $ref: '#/definitions/oneProvenanceList'
           ## use if all associations come from the same sources
           ##   so provenance is basically static
         - $ref: '#/definitions/transformResponseValues' 
           ## use for complex situations where associations may come from
           ##   different sources. Values from the response often need to 
           ##   be mapped to a standard way of describing sources 
-      ## MEASURES give INFO related to an association, can be EVIDENCE for it       
-      numericMeasures:
+      ## MEASURES give INFO related to an association, can be EVIDENCE for it
+      numericMeasures:  ## optional, include when needed
         description: >-
           Array of objects (Python list-of-dict-like). Gives measure info and
           which API/JSON-response field to retrieve it from
@@ -167,20 +162,14 @@ definitions:
         minItems: 1
         items:
           $ref: '#/definitions/oneCategoryMeasure'    
-      ## WHERE and WHEN is this information valid/relevant
-      ## ??seems like contextRelevance will be on every edge, since sometimes
-      ##   this will be dynamic (depends on the specific association).
-      ## however, sometimes it will be static since this is a restriction on
-      ##   all associations from this API...then BTE could decide whether
-      ##   to query it or not in the pre-query phase? Not sure. 
-      ##   And that static info could go into provenance -> api's context...
+      ## WHERE and WHEN is this association valid/relevant
       contextRelevance:
-        $ref: '#/definitions/contextObj'  
+        $ref: '#/definitions/contextObj'
       ## may set up fields later for other info? like what was used for 
       ##   triangulation (variant for disease->gene), text-mining info, 
       ##   clinical-data/exposures info?
 ## this is 79 char long #######################################################
-  ## DEFINITIONS for sub-schemas used in oneAssociationRetrievalObj              
+  ## DEFINITIONS for sub-schemas used in oneAssociationRetrievalObj
   inputInfo:
     type: object
     required:
@@ -225,7 +214,7 @@ definitions:
         default: false
 ## this is 79 char long #######################################################
 ## some info we want to structure is in the API/JSON response; some isn't. 
-## To handle this, most info fields must follow one of the following schemas:
+## To handle this, most fields must follow one of the following schemas:
 ## - staticValue: we set the info at the registry-level, 
 ##     not dependent on response 
 ## - takesOnResponseValue: info directly from the value in a specific field  
@@ -337,7 +326,6 @@ definitions:
           variable names for query/input info. That data should be used to
           replace the keywords in the template, creating one or more strings
         type: object  
-        ## require one or more keys
         minProperties: 1
         patternProperties:
           .:
@@ -379,11 +367,9 @@ definitions:
     type: object
     additionalProperties: False
     minProperties: 1
-    ## only have a referenceObj if you're going to provide info...
     properties: 
       publications:
         type: object
-        ## only have a publications if you're going to provide info...
         minProperties: 1
         patternProperties:
         ## keys are ID namespace, all-lowercase. 
@@ -443,7 +429,8 @@ definitions:
           Source version (KP API, knowledge-source, database, text corpus, etc)
         type: string
       versionType:
-        ## ?? set as enum (set options)                      
+        ## ?? set as enum (set options), use if-then to require this if
+        ##    version is present
         description: >-
           There are different formats for versioning. Current possible values
           include date_last_updated, version_number, data_from_this_date,
@@ -475,11 +462,11 @@ definitions:
           happened
         type: string        
       sourceContext:
-        ## used ONLY when every association retrieved from this operation
-        ##   is restricted in how it should be used or interpreted. 
+      ## used when the source was species-specific, disease-specific, etc
+      ## associations from the source could still be widely applicable
         $ref: '#/definitions/contextObj'        
-## assumes a measure's values are in one API response/JSON response field. 
-## therefore, schema similar to takesOnResponseValue, with some additional 
+## assumes a measure's values are in one API response/JSON response field.
+## therefore, schema is similar to takesOnResponseValue, with some additional 
 ##   static measure info 
 ## oneNumericMeasure and oneCategoryMeasure build on the generalMeasure schema
   generalMeasure:
@@ -512,8 +499,8 @@ definitions:
       ## put publications/websites with more info on the measure here
         $ref: '#/definitions/referenceObj'     
   oneNumericMeasure:
-  ## includes additional requirements, like range and direction info. 
-  ##   Units may also be specified. 
+  ## includes additional requirements, like direction.
+  ## can also give range and units
     allOf:
     - $ref: '#/definitions/generalMeasure'      
     - type: object
@@ -543,7 +530,6 @@ definitions:
               - maxInclusive 
           additionalProperties: False
           minProperties: 1
-          ## if you have a range, provide info...
           properties:            
             minExclusive: 
               type: number
@@ -564,17 +550,18 @@ definitions:
             closer to the lower bound)
           type: object
           minProperties: 1
-          ## needs to give at least something
+          ## ?? set as enum in the future?
           patternProperties:
-            .:
+            .:  
               type: string                    
         units: 
-        ## assuming this is the same for all measure values...
+        ## assume the same units for all instances of one measure 
           description: Units for the measure values
           type: string   
   oneCategoryMeasure:
   ## includes additional requirements, like categories (enumerates possible
-  ##   values) and direction info (if the possible values are ordered)
+  ##   values)
+  ## may include direction info (if the possible values are ordered)
     allOf:
     - $ref: '#/definitions/generalMeasure'
     - type: object
@@ -599,11 +586,10 @@ definitions:
           type: object
           additionalProperties: False
           minProperties: 1
-          ## if you have a direction, provide info...
           patternProperties:
             forward|reverse:
               type: string  
-  ## CONTEXT DATA OBJECT. 
+  ## CONTEXT DATA OBJECT
   contextObj:     
     description: >-
       Object, Python dict-like. Keys specify the type of context. Values
@@ -616,11 +602,11 @@ definitions:
     type: object
     additionalProperties: False
     minProperties: 1
-    ## if contextObj is present, require it to have some info inside
     patternProperties:
       ## cell line info counts as experimentalSpecific
       taxonSpecific|diseaseSpecific|cohortSpecific|experimentalSpecific:
-      ## the value is an object fitting one of these schemas
+        ## may be in the API/JSON-response or may not
+        ## Choose a schema to handle the situation
         oneOf:
         - $ref: '#/definitions/staticValue'
         - $ref: '#/definitions/takesOnResponseValue'

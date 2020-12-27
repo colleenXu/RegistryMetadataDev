@@ -1,31 +1,26 @@
 ## example of using the x-bte-association-retrieval schema 
-##   to write registry entries for querying MyDisease.info API (disgenet)
+##   to write registry entries for querying MyDisease.info API (operations
+##   based on disgenet data)
 ## notes about this specific registry entry: 
-##   some API/JSON-response fields weren't used (YearInitial, YearFinal for
+## - some API/JSON-response fields weren't used (YearInitial, YearFinal for
 ##   the years first and last reported)
-##   MyDisease.info is a complex API with a lot of operations/sources
-##  Kevin still has to set up disease-disease1 operation using
-##   https://www.disgenet.org/static/disgenet_ap1/files/downloads/disease_to_disease_CURATED.tsv.gz
+## - MyDisease.info is a complex API with a lot of operations/sources that
+##   aren't included here
 
 ## notes for developers:
-##   this registry file is linked to other files: provenance-mapping files, 
-##     BTE code files that post-process the API/JSON-response using the
-##     registry and provenance-mapping files, and examples of what the
-##     post-processed associations look like. 
-##   in the future? have a script alerting developer of DisGeNET update.
-##     Workflow is then to review the new DisGeNET data, change the pipeline
-##     to update myDisease.info API if needed, AND update the metadata files
-##     (the registry + linked files described above) as-needed. 
+## - this registry file is related to other files: provenance-mapping file,
+##   BTE code, and an example of a processed association. 
 ## this is 79 char long #######################################################
+
+## other notes:
+## - Kevin still has to set up disease-disease1 operation using
+##   https://www.disgenet.org/static/disgenet_ap1/files/downloads/disease_to_disease_CURATED.tsv.gz
 
 components:      
   x-bte-association-retrieval:  
-    ## DisGeNET can be used for a disease-disease1 operation
-    ##   but this isn't set up yet, so I don't have final queryInfo,
-    ##   API/JSON-response fields
     disease-gene1:  ## name for this particular operation
     ## raw API/JSON-response example used to help write this:
-## http://mydisease.info/v1/disease/MONDO:0016419?fields=disgenet.genes_related_to_disease
+    ## http://mydisease.info/v1/disease/MONDO:0016419?fields=disgenet.genes_related_to_disease
       queryInfo:  ## required
         supportBatch: true
         inputSeparator: ","
@@ -60,24 +55,19 @@ components:
         nodesConflated:  ## optional 
         ## note from CX: DisGeNET disease-gene relationships appear to 
         ##   conflate the biolink entity classes 
-        ## BTE could use this to automatically pick Disease AND 
-        ##   PhenotypicFeature Hint objects that match the input node lookup
-        ##   string. Or pick Gene AND GeneProduct Hint objects that match the 
-        ##   output node name...
         - original: Disease
           conflated: PhenotypicFeature
           where: DisGeNET
         - original: Gene
           conflated: GeneProduct
           where: DisGeNET   
-      references:  ## optional, include when possible: important user need 
+      references:  ## optional, include when possible
         publications:
         ## the supporting publications are PMIDs (no prefixes) stored as 
         ##   an array of ints in the pubmed field of the API/JSON-response
-        ## uses the takesOnResponseValue schema 
-        ##   since the formatting described above is fine
+        ## uses the takesOnResponseValue schema since that formatting is fine
         ## see the schema for other possible situations and the 
-        ##   post-processed association schema for what formatting is fine
+        ##   processed association schema for what formatting would be fine
           pmid: 
             responseField: "disgenet.genes_related_to_disease.pubmed"
         websites:    ## uses the transformUsingTemplate schema
@@ -98,10 +88,10 @@ components:
             ## the UMLS Disease IDs (no prefix), used as input to the query
             ## should be an array of one or more strings (disease IDs)
           bteCode: ""  
-          ## link to the github code that post-processes API/JSON-response 
-          ##   using the registry info 
+          ## github link to the code that uses this info to process response
       provenance:  ## uses the transformResponseValues schema
       ## see the schema for other possible situations 
+      ## ?? ask Kevin if he merged by rows with all the same except pubmed
         instructions: >- 
           Map from a specific association/JSON-record and its value in the
           source field to an array of objects describing the sources (standard
@@ -111,10 +101,10 @@ components:
           sources)
         responseFieldsUsed: "disgenet.genes_related_to_disease.source"
         mappingFile: "draft6_example_mappingFile_disgenetDG.yaml"  
+        ## github link to file
         ## ?? use mappingFile to get source info for metaKG
         bteCode: ""  
-        ## link to the github code that post-processes API/JSON-response 
-        ##   using the registry info 
+        ## github link to the code that uses this info to process response
       numericMeasures:  
       ## describes association-related numeric measures 
       - name: "DisGeNET gene-disease association score"
@@ -203,14 +193,11 @@ components:
         label: 
           value: "SIO:is_associated_with"        
         nodesConflated:  ## optional 
-        ## note from CX: DisGeNET appears to conflate the biolink entity
-        ##   classes. BTE could use this to automatically pick Disease AND 
-        ##   PhenotypicFeature Hint objects that match the input node lookup
-        ##   string. 
+        ## note from CX: DisGeNET appears to conflate the biolink entity classes
         - original: Disease
           conflated: PhenotypicFeature
           where: DisGeNET
-      references:  ## optional, include when possible: important user need 
+      references:  ## optional, include when possible
         publications:
           pmid: 
             responseField: "disgenet.variants_related_to_disease.pubmed"          
@@ -222,7 +209,6 @@ components:
             should have one source and one SNP rs ID. Result should be a key
             (websites) with a value (the array of string website URLs)
           ## this should be parsed as one string with no spaces
-## example: https://www.disgenet.org/browser/0/1/5/C0006142/snpid__rs1001179-source__BEFREE/
           template:
             "https://www.disgenet.org/browser/0/1/5/{disease}/\
             snpid__{snp}-source__{source}/"
@@ -233,8 +219,7 @@ components:
             ## the UMLS Disease IDs (no prefix), used as input to the query
             ## should be an array of one or more strings (disease IDs)
           bteCode: ""  
-          ## link to the github code that post-processes API/JSON-response 
-          ##   using the registry info           
+          ## github link to the code that uses this info to process response
       provenance:  ## uses the transformResponseValues schema
         instructions: >- 
           Map from a specific association/JSON-record and its value in the
@@ -245,10 +230,10 @@ components:
           sources)
         responseFieldsUsed: "disgenet.variants_related_to_disease.source"
         mappingFile: "draft6_example_mappingFile_disgenetDV.yaml"  
+        ## github link to file
         ## ?? use mappingFile to get source info for metaKG
         bteCode: ""  
-        ## link to the github code that post-processes API/JSON-response 
-        ##   using the registry info           
+        ## github link to the code that uses this info to process response        
       numericMeasures:  
       - name: "DisGeNET variant-disease association score"
         responseField: "disgenet.variants_related_to_disease.score"
@@ -305,16 +290,12 @@ components:
           maxInclusive: 1
         directionMeaning:
           smaller: more_specific  
-    gene-disease1:  ## name for this operation      
-    ## note that the current API setup means that the result only has the 
-    ##   disease ID, nothing else...
+    gene-disease1:  ## name for this operation     
+    ## note that the current API setup gives only the disease ID in response
     ## example: go to http://mydisease.info/#/query/post_query. Set...
-    ##   fields: disgenet.xrefs.umls
-    ##   size: 250
-    ##   in the request body: 
-    ##     "q": "1629",
-    ##       "scopes": "disgenet.genes_related_to_disease.gene_id"
-    ## Execute this query and see the results. 
+    ##   fields: disgenet.xrefs.umls, size: 250, request body: "q": "1629",
+    ##   "scopes": "disgenet.genes_related_to_disease.gene_id"
+    ## Execute this query and see the results
       queryInfo:  ## required
         supportBatch: true
         inputSeparator: ","    
@@ -352,7 +333,7 @@ components:
         - original: Gene
           conflated: GeneProduct
           where: DisGeNET   
-      ## while we currently can't get publications, we can sent users to 
+      ## while we currently can't get publications, we can send users to 
       ##   the disgenet source webpage for more info...
       references:         
         websites:    ## uses the transformUsingTemplate schema
@@ -370,8 +351,7 @@ components:
             ## the NCBIGene Gene IDs (no prefix), used as input to the query
             ## should be an array of one or more strings (gene IDs)
           bteCode: ""  
-          ## link to the github code that post-processes API/JSON-response 
-          ##   using the registry info          
+        ## github link to the code that uses this info to process response       
       provenance:  ## uses the oneProvenanceList schema
       - name: "MyDisease.info API"
         sourceType: service
@@ -385,8 +365,8 @@ components:
         sourceType: knowledgebase
         version: "7.0"
         versionType: "version_number"
-        ## not including method since we currently don't see enough info in 
-        ##   this operation to know this 
+        ## not including method since association doesn't include enough info
+        ##   to know what specific method was used
         sourceReferences: 
           websites: 
             value: "https://www.disgenet.org/dbinfo#section11"    
@@ -394,14 +374,10 @@ components:
           The DisGeNET team created gene-disease associations using various
           resources or ingested the associations from another knowledge-source
     variant-disease1:
-    ## note that the current API setup means that the result only has the 
-    ##   disease ID, nothing else...
+    ## note that the current API setup gives only the disease ID in response
     ## example: go to http://mydisease.info/#/query/post_query. Set...
-    ##   fields: disgenet.xrefs.umls
-    ##   size: 250
-    ##   in the request body: 
-    ##     "q": "rs1001179",
-    ##       "scopes": "disgenet.variants_related_to_disease.rsid"
+    ##   fields: disgenet.xrefs.umls, size: 250, request body: "q": "rs1001179",
+    ##   "scopes": "disgenet.variants_related_to_disease.rsid"
     ## Execute this query and see the results.     
       queryInfo:  ## required
         supportBatch: true
@@ -437,7 +413,7 @@ components:
         - original: Disease
           conflated: PhenotypicFeature
           where: DisGeNET       
-      ## while we currently can't get publications, we can sent users to 
+      ## while we currently can't get publications, we can send users to 
       ##   the disgenet source webpage for more info...
       references:         
         websites:    ## uses the transformUsingTemplate schema
@@ -455,8 +431,7 @@ components:
             ## the DBSNP SequenceVariant IDs (no prefix), used as input to the
             ##   query. should be an array of one or more strings (rs IDs)
           bteCode: ""  
-          ## link to the github code that post-processes API/JSON-response 
-          ##   using the registry info             
+        ## github link to the code that uses this info to process response           
       provenance:  ## uses the oneProvenanceList schema
       - name: "MyDisease.info API"
         sourceType: service
@@ -470,8 +445,8 @@ components:
         sourceType: knowledgebase
         version: "7.0"
         versionType: "version_number"
-        ## not including method since we currently don't see enough info in 
-        ##   this operation to know this 
+        ## not including method since association doesn't include enough info
+        ##   to know what specific method was used
         sourceReferences: 
           websites:   ## for variant info
             value: "https://www.disgenet.org/dbinfo#section12"

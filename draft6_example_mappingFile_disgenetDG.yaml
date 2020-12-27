@@ -1,14 +1,15 @@
 ## provenance linked to draft6_example_registry_disgenetDG.yaml
 ## notes for developers:
-##  this has "$ref" that need to be expanded in use. 
-##    Python has the library jsonrefs that can be used for this. 
-##  from Andrew Su: for now, require less 
+## - this has "$ref" that need to be expanded in use. 
+##   Python has the library jsonrefs that can be used for this. 
+## - from Andrew Su: for now, require less 
 ## this is 79 char long #######################################################
 
-## the only required fields for oneProvenanceUnit are name and sourceType
-##   only include other fields (method, sourceContext, sourceReferences, 
+## CX notes:
+## - the only required fields for oneProvenanceUnit are name and sourceType
+## - only include other fields (method, sourceContext, sourceReferences, 
 ##   descriptiveInfo) if the info will likely remain static 
-## version only included if it would be possible to automatically update,
+## - version only included if it would be possible to automatically update,
 ##   otherwise I just left a comment
 
 provenanceMapping:

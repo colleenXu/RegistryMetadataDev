@@ -2,30 +2,26 @@
 ##   to write registry entries for querying Automat CORD19 Scibite API
 ##   (current registry's 6 operations)
 ## notes about this specific registry entry: 
-##   some API/JSON-response fields weren't used 
-##   Automat CORD19 Scibite API has a lot of operations...
+## - some API/JSON-response fields weren't used 
+## - API has a lot of operations that aren't described here
 
 ## notes for developers:
-##   this registry file is linked to other files: BTE code files that
-##   post-process the API/JSON-response using the registry and examples of
-##   what the post-processed associations look like. 
+## - this registry file is related to other files: BTE code. 
 ## this is 79 char long #######################################################
 
 ## notes for CX:
-## ?? changed the response fields and input/output handling; REVIEW WITH KEVIN
-## Current registry file:
-## https://github.com/NCATS-Tangerine/translator-api-registry/blob/master/scibite/smartapi.yml#L122
+## - changed the response fields and input/output handling; REVIEW WITH KEVIN
+##   Current registry file:
+##   https://github.com/NCATS-Tangerine/translator-api-registry/blob/master/scibite/smartapi.yml#L122
+## - ask Kevin: parameters for operations 3-6 are a different format to the
+##   gene-input operations above    
 
-## other notes for RENCI:
-## ?? this API has other operations but those aren't set up yet,
-##   so I don't have final queryInfo or API/JSON-response fields
-## ?? references is an issue: there is a publications field but it appears to
-##   always be empty. So while this is made with NLP on CORD19, users can't
-##   see the actual publication the hit is from...there's also no association
-##   website to refer users to...
-## ?? I see inverse-relationships in the responses (ex: see disease -> gene
-##   results in the gene2disease operation example query response)
-## ?? look at stuff I'm not sure of in the operations below
+## questions for RENCI:
+## - the raw API/JSON-response has a publications field, but I always see an
+##   empty array...
+## - operations return associations with the inverse-relationship as well...
+##   (ex: gene2disease returns disease -> gene associations as well)
+## - see notes labeled "??" and address
 
 components:      
   x-bte-association-retrieval:  
@@ -58,15 +54,11 @@ components:
       ## ?? not sure if this provenance is correct
       provenance:  ## reused; same for all operations
         $ref: '#/definitions/automatProvenance'
-      ## ?? not sure if any of this below is current since I don't know enough
-      ##   about these measures
+      ## ?? not sure if any of this below is correct 
       numericMeasures:    ## reused; same for all operations
         $ref: '#/definitions/automatNumbers'
-      ## setting this since the associations are from coronavirus-specific
-      ##   publications (perhaps non-related associations are less
-      ##   trustworthy?)   
-      contextRelevance:     ## reused; same for all operations
-        $ref: '#/definitions/automatCORD19Context'          
+      ## ?? set contextRelevance? are non-coronavirus associations from
+      ##    this resource reliable as well?        
     gene2disease:  ## 2
     ## current API response example:
     ## https://automat.renci.org/cord19-scibite/gene/disease/NCBIGene:1803
@@ -101,14 +93,12 @@ components:
         $ref: '#/definitions/automatProvenance'
       numericMeasures:    
         $ref: '#/definitions/automatNumbers'
-      contextRelevance:    
-        $ref: '#/definitions/automatCORD19Context'          
     chemical2gene:  ## 3
     ## current API response example:
     ## https://automat.renci.org/cord19-scibite/chemical_substance/gene/CHEBI:46195        
       queryInfo:  
         supportBatch: false
-        parameters:  ## ??ask Kevin: diff format than the gene input ones above
+        parameters:  
           chebi: "{inputs[0]}"
       inputs:  
       - id: CHEBI
@@ -131,15 +121,13 @@ components:
       provenance:  
         $ref: '#/definitions/automatProvenance'
       numericMeasures:    
-        $ref: '#/definitions/automatNumbers'
-      contextRelevance:   
-        $ref: '#/definitions/automatCORD19Context'     
+        $ref: '#/definitions/automatNumbers' 
     chemical2disease:  ## 4
     ## current API response example:
     ## https://automat.renci.org/cord19-scibite/chemical_substance/disease/CHEBI:46195
       queryInfo:  
         supportBatch: false
-        parameters:  ## ??ask Kevin: diff format than the gene input ones above
+        parameters: 
           chebi: "{inputs[0]}"
       inputs:  
       - id: CHEBI
@@ -164,15 +152,13 @@ components:
       provenance:  
         $ref: '#/definitions/automatProvenance'
       numericMeasures:    
-        $ref: '#/definitions/automatNumbers'
-      contextRelevance:    
-        $ref: '#/definitions/automatCORD19Context'        
+        $ref: '#/definitions/automatNumbers'     
     disease2gene:  ## 5
     ## current API response example:
     ## https://automat.renci.org/cord19-scibite/disease/gene/MONDO:0005016
       queryInfo:  
         supportBatch: false
-        parameters:   ## ??ask Kevin: diff format than the gene input ones above
+        parameters:   
           mondo: "{inputs[0]}"    
       inputs: 
       - id: MONDO
@@ -200,14 +186,12 @@ components:
         $ref: '#/definitions/automatProvenance'
       numericMeasures:    
         $ref: '#/definitions/automatNumbers'
-      contextRelevance:    
-        $ref: '#/definitions/automatCORD19Context'
     disease2chemical:    ## 6
     ## current API response example:
     ## https://automat.renci.org/cord19-scibite/disease/chemical_substance/MONDO:0005016
       queryInfo:  
         supportBatch: false
-        parameters:   ## ??ask Kevin: diff format than the gene input ones above
+        parameters:   
           mondo: "{inputs[0]}"    
       inputs:  
       - id: MONDO
@@ -232,18 +216,13 @@ components:
       provenance: 
         $ref: '#/definitions/automatProvenance'
       numericMeasures:    
-        $ref: '#/definitions/automatNumbers'
-      contextRelevance:    
-        $ref: '#/definitions/automatCORD19Context'    
+        $ref: '#/definitions/automatNumbers'  
 ## this is 79 char long #######################################################  
 definitions:
   ## ?? not sure if this provenance is correct
   automatProvenance:
   - name: "Automat CORD19 Scibite API"
     sourceType: NLP
-    ## https://automat.renci.org/#/cord19-scibite/about_about_get has no
-    ##   version. but API/JSON-response has edge_source v2 and current
-    ##   registry file, automat.renci.org both say v2...
     version: "v2"
     versionType: "version_number"
     method: ingest
@@ -266,6 +245,11 @@ definitions:
       standardized article metadata). Publications come from Pubmed (PMC open
       access corpus), WHO (a corpus maintained by them), bioRxiv, and medRxiv
       pre-prints
+    sourceContext:
+      diseaseSpecific:
+        value:
+        - "MONDO:0020753"  ## coronavirus infection
+        - "MONDO:0100096"  ## COVID-19
   automatNumbers:     
   - name: "Automat enrichment p-value"
     responseField: "[1].enrichment_p"
@@ -283,9 +267,4 @@ definitions:
       maxInclusive: 1
     directionMeaning:  
     ## large number means these entities co-occur in more publications? 
-      larger: more_evidence
-  automatCORD19Context:
-    diseaseSpecific:    ## using staticValue schema
-      value:
-      - "MONDO:0020753"  ## coronavirus infection
-      - "MONDO:0100096"  ## COVID-19            
+      larger: more_evidence        

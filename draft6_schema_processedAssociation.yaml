@@ -1,17 +1,19 @@
 ## notes for developers:
-##  use this to validate association after BTE post-processing using the
-##    registry file and any mapping files 
-##  this schema has "$ref" that need to be expanded in use. 
-##    Python has the library jsonrefs that can be used for this. 
-##  from Andrew Su: for now, require less 
+## - use this to validate association after BTE processes API/JSON-responses
+##   using the registry entry and any related files
+## - this schema MUST have type:object/properties for each object. When
+##   removed, the validation will not work correctly. 
+## - this schema has "$ref" that need to be expanded in use. 
+##   Python has the library jsonrefs that can be used for this. 
+## - from Andrew Su: for now, require less 
 ## this is 79 char long #######################################################
 
 ## CX notes:
-## an ongoing issue: all the metadata for the operation in the registry file 
-##   likely DOESN'T NEED TO HANG OFF every single association 
-## I'll leave notes on what I decide to leave off and keep on
+## - an ongoing issue: the metadata from the registry file likely doesn't need
+##   to be on every single association. I'll leave notes on what I decide to
+##   leave off and keep on
 
-title: Schema for associations/edges after BTE post-processing
+title: Schema for associations/edges after BTE processing
 $schema: 'http://json-schema.org/draft-07/schema#'
 type: object
 description: >-
@@ -19,19 +21,17 @@ description: >-
   entities retrieved using a knowledge-provider (KP) API in the Translator
   ecosystem. This assumes that BTE processed the API/JSON-response using
   metadata from the x-bte-association-retrieval extension in the registry file
-## schema corresponds to oneAssociationRetrievalObj in
-##   x-bte-association-retrieval schema.
-## however, there are differences in structure/type after post-processing
-##   currently unnesting many values
+## schema corresponds to oneAssociationRetrievalObj in the registry schema
+## however, there are differences in structure/type 
 required:
 ## don't need queryInfo, inputs, outputs since BTE uses this to automatically
-##   handle the querying and some of the post-processing node resolution
+##   handle the querying and some of the node resolution
 - predicateInfo
 ## strongly recommended: provenance, references
 ## use if needed: numericMeasures, categoryMeasures, contextRelevance
 additionalProperties: False
 properties:
-  predicateInfo:    ## need the specific predicates for this edge 
+  predicateInfo:  ## need the specific predicates for this edge 
     type: object
     required:
     - biolink
@@ -52,15 +52,14 @@ properties:
         description: Human-readable label for id field above
         type: string
       ## don't need nodesConflated? BTE could use it in the automatic querying
-      ##   and post-processing node resolution. See the registry file and 
-      ##   registry schema file for more thoughts 
+      ##   and processing. See the registry schema file for more thoughts
   references:    ## need the specific references for this edge 
     $ref: '#/definitions/referenceObj' 
-  provenance:   ## need the specific prov. for this edge 
+  provenance:   ## need the specific provenance for this edge 
   ## It's a lot to have on every edge but saving records by uri and then 
   ##   looking them up later may be harder. 
-  ## maybe BTE can nest the association-retrieval provenance in a sub-field 
-  ##   like this. Then the provenance edge property can also hold info for 
+  ## maybe BTE can nest the provenance in an associationRetrieval sub-field 
+  ##   like this. Then the provenance edge property can also hold info for
   ##   other operations that are done on this edge (like scoring)     
     description:
       Groups together provenance related to this association.
@@ -78,9 +77,8 @@ properties:
   ## It's a lot to have on every edge but saving records by uri and then 
   ##   looking them up later may be harder.  
   ## the registry file told BTE what JSON field to use (in the responseField),
-  ##   then BTE inserts data from that field into a new sub-field (value) in
-  ##   the metadata structure
-  ## BTE can exclude the responseField sub-field from the association  
+  ##   then BTE inserts that data into a new sub-field (value). 
+  ## dont' include the responseField sub-field below 
   numericMeasures:  
     description: >-
       Array of objects (Python list-of-dict-like). Gives measure info and
@@ -109,18 +107,15 @@ definitions:
     type: object
     additionalProperties: False
     minProperties: 1
-    ## only have a referenceObj if you're going to provide info...
     properties: 
       publications:
         type: object
-        ## only have a publications if you're going to provide info...
         minProperties: 1
         patternProperties:
         ## keys are ID namespace, all-lowercase. 
         ## Examples: pmid, pmc, doi, biorixv, medrxiv
           .:            
-            ## allows for numbers since IDs are often automatically 
-            ##   parsed as numbers...  
+            ## allows for numbers for ID numbers 
             oneOf:  
             - type: array
               minItems: 1
@@ -191,8 +186,8 @@ definitions:
           happened
         type: string        
       sourceContext:
-        ## used ONLY when every association retrieved from this operation
-        ##   is restricted in how it should be used or interpreted. 
+      ## used when the source was species-specific, disease-specific, etc
+      ## associations from the source could still be widely applicable
         $ref: '#/definitions/contextObj' 
 ## this is 79 char long #######################################################
 ## oneNumericMeasure and oneCategoryMeasure build on the generalMeasure schema
@@ -220,8 +215,8 @@ definitions:
       ## put publications/websites with more info on the measure here
         $ref: '#/definitions/referenceObj'           
   oneNumericMeasure:
-  ## includes additional requirements, like value (must be numeric), range,
-  ##   and direction info. Units may also be specified. 
+  ## includes additional requirements, like direction and value.
+  ## can also give range and units
     allOf:
     - $ref: '#/definitions/generalMeasure'      
     - type: object
@@ -278,13 +273,13 @@ definitions:
             .:
               type: string                    
         units: 
-        ## assuming this is the same for all measure values...
+        ## assume the same units for all instances of one measure 
           description: Units for the measure values
           type: string   
   oneCategoryMeasure:
-  ## includes additional requirements, like value (must be string), 
-  ##   categories (enumerates possible values) and direction info (if
-  ##   the possible values are ordered)
+  ## includes additional requirements, like categories (enumerates possible
+  ##   values) and value (must be a string)
+  ## may include direction info (if the possible values are ordered)
     allOf:
     - $ref: '#/definitions/generalMeasure'
     - type: object
@@ -311,7 +306,6 @@ definitions:
           type: object
           additionalProperties: False
           minProperties: 1
-          ## if you have a direction, provide info...
           patternProperties:
             forward|reverse:
               type: string
@@ -328,7 +322,6 @@ definitions:
     type: object
     additionalProperties: False
     minProperties: 1
-    ## if contextObj is present, require it to have some info inside
     patternProperties:
       ## cell line info counts as experimentalSpecific
       taxonSpecific|diseaseSpecific|cohortSpecific|experimentalSpecific:

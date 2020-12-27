@@ -1,0 +1,186 @@
+## example of using the x-bte-association-retrieval schema 
+##   to write registry entries for querying Automat HMDB API
+##   (current registry's 6 operations)
+## notes about this specific registry entry: 
+## - some API/JSON-response fields weren't used 
+## - API has a few operations not in current registry
+
+## notes for developers:
+## - this registry file is linked to other files: BTE code, and an example of
+##   a processed association. 
+## this is 79 char long #######################################################
+
+## questions for RENCI:
+## - other -> ChemicalSubstance queries return only ChemicalSubstance -> other
+##   associations. In some cases, the predicate is specific for
+##   ChemicalSubstance -> other, so...
+##   BTE has to assign the inverse predicate?
+## - the raw API/JSON-response has a publications field, but I always see an
+##   empty array...
+## - see notes labeled "??" and address
+
+## CX notes: 
+## REMOVING gene2disease, disease2gene because there are no associations in
+##   this API. Can see by looking at output of
+##   https://automat.renci.org/#/hmdb/predicates_predicates_get   
+## - hard to construct website urls to hmdb: need HMDB IDs which are either
+##   not in the API response or "hidden" in the nodes' equivalent IDs array
+##   (have to iterate through this array to find the matching string, then
+##   take only the ID (not the prefix)
+## - the raw API/JSON-response has a publications field, but I always see an
+##   empty array...
+## - ask Kevin: parameters for operations 2-4 are a different format to the
+##   gene-input operations above    
+
+components:      
+  x-bte-association-retrieval:  
+    gene2chemical:  ## 1
+    ## current API response example:
+    ## https://automat.renci.org/hmdb/gene/chemical_substance/NCBIGene:5972
+    ## notice all results are organized as ChemicalSubstance -> Gene
+    ## and the names of some ChemicalSubstance nodes are blank or CHEMBL IDs...
+      queryInfo:  ## required
+        supportBatch: false
+        parameters:
+          geneid: "NCBIGene:{inputs[0]}"
+      inputs:  ## required
+      - id: NCBIGene
+        semantic: Gene
+        requiresPrefix: true
+      outputs:   ## required
+      ## I'm not sure if they give CHEMBL.COMPOUND as primary ID anymore
+      - id: CHEBI
+        semantic: ChemicalSubstance  
+        containsPrefix: true
+        responseField: "[2].id"        
+      predicateInfo:  ## required
+      ## fine since they're all symmetrical predicates
+        biolink:  ## currently the biolink?? interacts_with
+          responseField: "[1].relation_label" 
+        id:   ## currently RO:0002434 (also interacts_with)
+          responseField: "[1].relation"
+        nodesConflated:  ## optional 
+        ## since it's actually the gene products (proteins) interacting
+        ##   with the chemicals
+        - original: Gene
+          conflated: GeneProduct
+          where: "Automat HMDB API"
+      ## issues with references: see the "CX notes" above
+      provenance:
+        $ref: '#/definitions/automatProvenance' 
+    chemical2gene:  ## 2
+    ## current API response example:
+    ## https://automat.renci.org/hmdb/chemical_substance/gene/CHEBI:83037
+      queryInfo:  
+        supportBatch: false
+        parameters:
+          chebi: "{inputs[0]}"
+      inputs: 
+      - id: CHEBI
+        semantic: ChemicalSubstance
+        requiresPrefix: true
+      outputs:   
+      - id: NCBIGene
+        semantic: Gene  
+        containsPrefix: true
+        responseField: "[2].id"        
+      predicateInfo:
+        biolink:  ## currently the biolink?? interacts_with
+          responseField: "[1].relation_label" 
+        id:   ## currently RO:0002434 (also interacts_with)
+          responseField: "[1].relation"
+        nodesConflated:  ## optional 
+        ## since it's actually the gene products (proteins) interacting
+        ##   with the chemicals
+        - original: Gene
+          conflated: GeneProduct
+          where: "Automat HMDB API"
+      provenance:
+        $ref: '#/definitions/automatProvenance'    
+    chemical2disease:  ## 3
+    ## current API response example:
+    ## https://automat.renci.org/hmdb/chemical_substance/disease/CHEBI:83037
+      queryInfo:  
+        supportBatch: false
+        parameters:
+          chebi: "{inputs[0]}"    
+      inputs: 
+      - id: CHEBI
+        semantic: ChemicalSubstance
+        requiresPrefix: true
+      outputs:   
+      ## I'm not sure if they give DOID as primary ID anymore
+      - id: MONDO
+        semantic: Disease
+        containsPrefix: true
+        responseField: "[2].id"          
+      predicateInfo:
+        biolink:  ## currently the biolink?? related_to
+          responseField: "[1].relation_label" 
+        id:   ## currently SEMMEDDB:ASSOCIATED_WITH
+          responseField: "[1].relation"
+        nodesConflated:  ## optional 
+        ## I saw entities that could be PhenotypicFeatures in 
+        ## https://hmdb.ca/diseases?page=66 like vitamin deficiencies
+        - original: Disease
+          conflated: PhenotypicFeature
+          where: "HMDB"
+      provenance:
+        $ref: '#/definitions/automatProvenance'
+    disease2chemical:   ## 4
+    ## current API response example:
+    ## https://automat.renci.org/hmdb/disease/chemical_substance/MONDO:0024331
+      queryInfo:  
+        supportBatch: false
+        parameters:
+          mondo: "{inputs[0]}"
+      inputs: 
+      - id: MONDO
+        semantic: Disease
+        requiresPrefix: true
+      outputs:   
+      ## I'm not sure if they give CHEMBL.COMPOUND as primary ID anymore
+      - id: CHEBI
+        semantic: ChemicalSubstance
+        containsPrefix: true
+        responseField: "[2].id"          
+      predicateInfo:    ## fine since they're all symmetrical predicates
+        biolink:  ## currently the biolink?? related_to
+          responseField: "[1].relation_label" 
+        id:   ## currently SEMMEDDB:ASSOCIATED_WITH
+          responseField: "[1].relation"
+        nodesConflated:  ## optional 
+        ## I saw entities that could be PhenotypicFeatures in 
+        ## https://hmdb.ca/diseases?page=66 like vitamin deficiencies
+        - original: Disease
+          conflated: PhenotypicFeature
+          where: "HMDB"
+      provenance:
+        $ref: '#/definitions/automatProvenance'
+## this is 79 char long #######################################################
+definitions:
+  ## ?? not sure if this provenance is correct
+  automatProvenance:
+  - name: "Automat HMDB API"
+    sourceType: ingest
+    ## ?? not clear what the version is
+    method: ingest  ## ?? is this method and descriptiveInfo correct
+    descriptiveInfo: >- 
+      Likely parsed HMDB metabolite data and created associations
+      from the annotations (including what diseases, pathways, gene/proteins,
+      etc are linked to the metabolite)
+  - name: "HMDB"
+    sourceType: knowledgebase
+    ## Automat doesn't give version info for this
+    sourceReferences:
+      publications:
+      ## descriptiveInfo uses info from the main body of the Pubmed article
+        pmid:
+          value: "29140435"
+      websites:
+        value: "https://hmdb.ca/sources"
+    descriptiveInfo: >- 
+      Note from CX; method not assigned because it was unclear. May be a mix
+      of manual curation (aided by text mining tools), in silico prediction of
+      metabolites and their reacting enzymes, and ingestion / review of info
+      from other sources (OMIM, OMMBID, Merck Manual, KEGG, MetaCyc)

@@ -1,21 +1,20 @@
 ## example of using the x-bte-association-retrieval schema 
-##   to write a registry entry for querying MyDisease.info API 
-##   with diseases -> genes 
+##   to write a registry entry for querying MyDisease.info API diseases ->
+##   genes (which uses disgenet)
 ## notes about this specific registry entry: 
-##   none of the operations have restrictions (context/relevance)
-##   some API/JSON-response fields weren't used (YearInitial, YearFinal for
+## - none of the operations have restrictions (context/relevance)
+## - some API/JSON-response fields weren't used (YearInitial, YearFinal for
 ##   the years first and last reported)
-##   MyDisease.info is a complex API with a lot of operations/sources
+## - MyDisease.info is a complex API with a lot of operations/sources that
+##   aren't included here
 
 ## notes for developers:
-##   this registry file is linked to other files: provenance-mapping files, 
-##     BTE code files that post-process the API/JSON-response using the
-##     registry and provenance-mapping files, and examples of what the
-##     post-processed associations look like. 
-##   in the future? have a script alerting developer of DisGeNET update.
-##     Workflow is then to review the new DisGeNET data, change the pipeline
-##     to update myDisease.info API if needed, AND update the metadata files
-##     (the registry + linked files described above) as-needed. 
+##  - this registry file is related to other files: provenance-mapping file,
+##    BTE code, and an example of a processed association. 
+##  - in the future? have a script alerting developer of DisGeNET update.
+##    Then workflow: review the new DisGeNET data, change the pipeline
+##    to update myDisease.info API if needed, AND update the metadata files
+##    (the registry + linked files described above) as-needed
 ## this is 79 char long #######################################################
 
 components:      
@@ -23,6 +22,8 @@ components:
   x-bte-association-retrieval:  
   ## each object below describes one operation 
     disease-gene1:  ## name for this particular operation
+    ## raw API/JSON-response example used to help write this:
+    ## http://mydisease.info/v1/disease/MONDO:0016419?fields=disgenet.genes_related_to_disease
       queryInfo:  ## required
         supportBatch: true
         inputSeparator: ","
@@ -57,24 +58,19 @@ components:
         nodesConflated:  ## optional 
         ## note from CX: DisGeNET disease-gene relationships appear to 
         ##   conflate the biolink entity classes 
-        ## BTE could use this to automatically pick Disease AND 
-        ##   PhenotypicFeature Hint objects that match the input node lookup
-        ##   string. Or pick Gene AND GeneProduct Hint objects that match the 
-        ##   output node name...
         - original: Disease
           conflated: PhenotypicFeature
           where: DisGeNET
         - original: Gene
           conflated: GeneProduct
           where: DisGeNET   
-      references:  ## optional, include when possible: important user need 
+      references:  ## optional, include when possible
         publications:
         ## the supporting publications are PMIDs (no prefixes) stored as 
         ##   an array of ints in the pubmed field of the API/JSON-response
-        ## uses the takesOnResponseValue schema 
-        ##   since the formatting described above is fine
+        ## uses the takesOnResponseValue schema since that formatting is fine
         ## see the schema for other possible situations and the 
-        ##   post-processed association schema for what formatting is fine
+        ##   processed association schema for what formatting would be fine
           pmid: 
             responseField: "disgenet.genes_related_to_disease.pubmed"
         websites:    ## uses the transformUsingTemplate schema
@@ -95,23 +91,22 @@ components:
             ## the UMLS Disease IDs (no prefix), used as input to the query
             ## should be an array of one or more strings (disease IDs)
           bteCode: ""  
-          ## link to the github code that post-processes API/JSON-response 
-          ##   using the registry info 
+          ## github link to the code that uses this info to process response
       provenance:  ## uses the transformResponseValues schema
       ## see the schema for other possible situations 
         instructions: >- 
           Map from a specific association/JSON-record and its value in the
           source field to an array of objects describing the sources (standard
-          provenance model). This mapping is stored in the mappingFile JSON
+          provenance model). This mapping is stored in the mappingFile YAML
           within the provenanceMapping object. Result should be a key
           (provenance) with a value (the array of objects describing the
           sources)
         responseFieldsUsed: "disgenet.genes_related_to_disease.source"
-        mappingFile: "draft6_example_mappingFile_disgenetDG.yaml"  
+        mappingFile: "draft6_example_mappingFile_disgenetDG.yaml"
+        ## github link to file
         ## ?? use mappingFile to get source info for metaKG
         bteCode: ""  
-        ## link to the github code that post-processes API/JSON-response 
-        ##   using the registry info 
+        ## github link to the code that uses this info to process response
       numericMeasures:  
       ## describes association-related numeric measures 
       - name: "DisGeNET gene-disease association score"

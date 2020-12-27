@@ -1,15 +1,14 @@
 ## example of what one disease -> chemical_substance association could look
-##   like, after BTE post-processing a query's API/JSON-response using the
+##   like, after BTE processing a query's API/JSON-response using the
 ##   registry metadata 
-
-## the specific disease -> chemical_substance association modeled: the SECOND
+## - the specific disease -> chemical_substance association modeled: the SECOND
 ##   JSON record in the API/JSON-response here:
-## https://automat.renci.org/cord19-scigraph/disease/chemical_substance/MONDO:0005016
+##   https://automat.renci.org/cord19-scigraph/disease/chemical_substance/MONDO:0005016
 
 ## CX notes:
-## an ongoing issue: all the metadata for the operation in the registry file 
-##   likely DOESN'T NEED TO HANG OFF every single association 
-## go to the schema for notes on what to leave off and keep
+## - an ongoing issue: the metadata from the registry file likely doesn't need
+##   to be on every single association. See schema for notes on what was kept
+##   or left off from the registry metadata
 ## this is 79 char long #######################################################
 
   predicateInfo:  ## need the specific predicates for this edge 
@@ -17,14 +16,14 @@
   ## then BTE inserts data from that field into the metadata structure
     biolink: "related_to"
     id: "SEMMEDDB:ASSOCIATED_WITH"
-  provenance:  ## need the specific prov. for this edge 
+  provenance:  ## need the specific provenance for this edge 
   ## It's a lot to have on every edge but saving records by uri and then 
   ##   looking them up later may be harder.  
-  ## the registry file contains this array (it's static). BTE inserts it here
+  ## the registry file contains this static array. BTE inserts it here
     associationRetrieval:
     - name: "Automat CORD19 Scigraph API"
       sourceType: NLP
-      version: "v11"
+      version: "v2"
       versionType: "version_number"
       method: ingest
       descriptiveInfo: >- 
@@ -42,6 +41,11 @@
         standardized article metadata). Publications come from Pubmed (PMC open
         access corpus), WHO (a corpus maintained by them), bioRxiv, and medRxiv
         pre-prints
+      sourceContext:
+      ## BTE should use the static values from the registry file and unnest
+        diseaseSpecific:
+        - "MONDO:0020753"  ## coronavirus infection
+        - "MONDO:0100096"  ## COVID-19        
   numericMeasures:   ## need the specific measure values for this edge 
   ## It's a lot to have on every edge but saving records by uri and then 
   ##   looking them up later may be harder.
@@ -62,10 +66,3 @@
       maxInclusive: 1
     directionMeaning:  
       larger: more_evidence
-  ## ??dunno if contextRelevance has to be on the edge, or if it's just to use
-  ##   pre-query for BTE to decide whether to query it or not
-  contextRelevance:  ## in this case, this applies to all edges from this API
-  ## BTE should use the static values from the registry file and unnest
-    diseaseSpecific:   
-    - "MONDO:0020753"  ## coronavirus infection
-    - "MONDO:0100096"  ## COVID-19  
