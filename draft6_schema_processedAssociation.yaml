@@ -1,10 +1,10 @@
 ## notes for developers:
 ## - use this to validate association after BTE processes API/JSON-responses
 ##   using the registry entry and any related files
-## - this schema MUST have type:object/properties for each object. When
-##   removed, the validation will not work correctly. 
 ## - this schema has "$ref" that need to be expanded in use. 
 ##   Python has the library jsonrefs that can be used for this. 
+## - objects must include "type:object" and "properties". If removed, the
+##   validation will not work correctly. 
 ## - from Andrew Su: for now, require less 
 ## this is 79 char long #######################################################
 
@@ -28,7 +28,7 @@ required:
 ##   handle the querying and some of the node resolution
 - predicateInfo
 ## strongly recommended: provenance, references
-## use if needed: numericMeasures, categoryMeasures, contextRelevance
+## use if needed: numericMeasures, categoricalMeasures, contextRelevance
 additionalProperties: False
 properties:
   predicateInfo:  ## need the specific predicates for this edge 
@@ -87,14 +87,14 @@ properties:
     minItems: 1
     items:
       $ref: '#/definitions/oneNumericMeasure'      
-  categoryMeasures:
+  categoricalMeasures:
     description: >-
       Array of objects (Python list-of-dict-like). Gives measure info and
       which API/JSON-response field to retrieve it from
     type: array
     minItems: 1
     items:
-      $ref: '#/definitions/oneCategoryMeasure'
+      $ref: '#/definitions/oneCategoricalMeasure'
   contextRelevance:    ## need the specific context for this edge 
   ## I don't think other operations will add to this, so I left info like this
     $ref: '#/definitions/contextObj'  
@@ -190,11 +190,11 @@ definitions:
       ## associations from the source could still be widely applicable
         $ref: '#/definitions/contextObj' 
 ## this is 79 char long #######################################################
-## oneNumericMeasure and oneCategoryMeasure build on the generalMeasure schema
+## oneNumericMeasure and oneCategoricalMeasure build on the generalMeasure schema
   generalMeasure:
     type: object
     required:
-    - name  ## value will be set in the numeric/category measures
+    - name  ## value will be set in the numeric/categorical measures
     ## don't set additionalProperties to False, will mess with allOf later
     properties:
       name:
@@ -276,7 +276,7 @@ definitions:
         ## assume the same units for all instances of one measure 
           description: Units for the measure values
           type: string   
-  oneCategoryMeasure:
+  oneCategoricalMeasure:
   ## includes additional requirements, like categories (enumerates possible
   ##   values) and value (must be a string)
   ## may include direction info (if the possible values are ordered)

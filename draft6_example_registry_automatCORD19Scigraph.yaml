@@ -6,20 +6,23 @@
 ## - API has a lot of operations that aren't described here
 
 ## notes for developers:
-## - this registry file is related to other files: BTE code, and an example of
+## - this registry file is related to other files: BTE code and an example of
 ##   a processed association. 
 ## this is 79 char long #######################################################
 
-## notes for CX:
-## - changed the response fields and input/output handling; REVIEW WITH KEVIN
-##   Current registry file:
-##   https://github.com/NCATS-Tangerine/translator-api-registry/blob/master/scigraph/smartapi.yaml#L122
-## - ask Kevin: parameters for operations 3-6 are a different format to the
-##   gene-input operations above    
+## notes for CX: @@
+## - how to handle the output responseField when sometimes it's in the first node [0] and sometimes in the second node [2], based on whether the expected direction or inverse direction association is returned...
+##   notice how the response fields seem diff from in the current registry file: 
+##     https://github.com/NCATS-Tangerine/translator-api-registry/blob/master/scigraph/smartapi.yaml#L122
+## - are CHEMBL.COMPOUND and DOID still used for node IDs? I removed them here. if added back in, would inputs/[0]/id be a list or another entry in inputs (same for outputs)?
+## - set the predicates as static, even tho there is a responseField for them?
+## - are associations reliable for non-coronavirus questions? some kind of restriction / context for coronavirus Q only (currently in provenance -> CORD19 -> sourceContext)? 
+## - queryInfo/parameters is different format for operations 3-6 compared to gene-input operations 1-2. keep or change this? 
     
 ## questions for RENCI:
 ## - the raw API/JSON-response has a publications field, but I always see an
 ##   empty array...
+## - are CHEMBL.COMPOUND and DOID still used for node IDs? 
 ## - operations return associations with the inverse-relationship as well...
 ##   (ex: gene2disease returns disease -> gene associations as well)
 ## - see notes labeled "??" and address
@@ -38,13 +41,14 @@ components:
         semantic: Gene
         requiresPrefix: true
       outputs:   ## required
-      ## I'm not sure if they give CHEMBL.COMPOUND as primary ID anymore
+      ## @@ is CHEMBL.COMPOUND still used for node IDs? 
       - id: CHEBI
         semantic: ChemicalSubstance  
         containsPrefix: true
         responseField: "[2].id"
       predicateInfo:  
-        biolink:  ## currently the biolink?? related_to
+      ## biolink / id / label use the takesOnResponseValue sub-schema
+        biolink:   ## ?? is this the biolink predicate?
           responseField: "[1].relation_label"  
         id:   ## currently SEMMEDDB:ASSOCIATED_WITH
           responseField: "[1].relation"      
@@ -57,9 +61,7 @@ components:
         $ref: '#/definitions/automatProvenance'
       ## ?? not sure if any of this below is correct 
       numericMeasures:    ## reused; same for all operations
-        $ref: '#/definitions/automatNumbers'
-      ## ?? set contextRelevance? are non-coronavirus associations from
-      ##    this resource reliable as well?     
+        $ref: '#/definitions/automatNumbers' 
     gene2disease:  ## 2
     ## current API response example:
     ## https://automat.renci.org/cord19-scigraph/gene/disease/NCBIGene:1803
@@ -72,7 +74,7 @@ components:
         semantic: Gene
         requiresPrefix: true
       outputs:   
-      ## I'm not sure if they give DOID as primary ID anymore
+      ## @@ is DOID still used for node IDs? 
       - id: MONDO
         semantic: Disease  
         containsPrefix: true
@@ -135,7 +137,7 @@ components:
         semantic: ChemicalSubstance
         requiresPrefix: true
       outputs:  
-      ## I'm not sure if they give DOID as primary ID anymore
+      ## @@ I'm not sure if they give DOID as primary ID anymore
       - id: MONDO
         semantic: Disease  
         containsPrefix: true
@@ -199,7 +201,7 @@ components:
         semantic: Disease
         requiresPrefix: true
       outputs:   
-      ## I'm not sure if they give CHEMBL.COMPOUND as primary ID anymore
+      ## @@ I'm not sure if they give CHEMBL.COMPOUND as primary ID anymore
       - id: CHEBI
         semantic: ChemicalSubstance  
         containsPrefix: true
@@ -263,7 +265,8 @@ definitions:
     directionMeaning:  
     ## small p-value means these two entities co-occur more often/consistently
     ##   than expected?
-      smaller: more_consistent
+      smaller: more_probable  ## maybe more likely to be a "real" association
+      ## based on statistics / network-based methods 
   - name: "Automat publications ratio"
     responseField: "[1].num_publications"
     range:

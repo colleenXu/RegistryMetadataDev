@@ -60,7 +60,6 @@ provenanceMapping:
         value: 
         - "https://hpo.jax.org/app/faq"
         - "https://hpo.jax.org/app/download/annotation"
-        - "https://hpo.jax.org/app/help/annotations"
     descriptiveInfo: >- 
       Note from CX; it looks like the HPO consortium created gene-phenotype
       associations when a gene and phenotype were linked to the same disease.
@@ -281,12 +280,10 @@ provenanceMapping:
         value: "NCBITaxon:9606"    ## this is human
     sourceReferences: 
       websites: 
-        value: "http://ctdbase.org/about/"
+        value: "http://ctdbase.org/help/diseaseGeneDetailHelp.jsp"
     descriptiveInfo: >- 
-      The curated gene-disease associations from CTD are categorized as
-      marker/mechanism and/or therapeutic (when a person looks up the genes
-      associated with a specific disease in CTD, this info on what
-      associations are manually curated is given).
+      CTD curators use published literature to make gene-disease associations.
+      These associations are categorized as marker/mechanism and/or therapeutic
   PSYGENET:    ## 16
   - "$ref": "#/definitions/MyDisease"
   - "$ref": "#/definitions/DisGeNET_from_ingest"

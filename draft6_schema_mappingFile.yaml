@@ -2,9 +2,11 @@
 ## - use this to validate mappingFile linked by a registry entry
 ## - this schema has "$ref" that need to be expanded in use.
 ##   Python has the library jsonref that can be used for this. 
-## - this schema MUST have type:object/properties for each object. When
-##   removed, the validation will not work correctly. 
+## - objects must include "type:object" and "properties". If removed, the
+##   validation will not work correctly. 
 ## - from Andrew Su: for now, require less 
+
+## will update with sub-schema for other mappings as needed
 ## this is 79 char long #######################################################
 
 title: Schema for mappingFiles linked to x-bte-association-retrieval

@@ -1,6 +1,6 @@
 ## example of using the x-bte-association-retrieval schema 
-##   to write a registry entry for querying MyDisease.info API diseases ->
-##   genes (which uses disgenet)
+##   to write a registry entry for querying MyDisease.info API
+##   diseases -> genes (which uses disgenet)
 ## notes about this specific registry entry: 
 ## - none of the operations have restrictions (context/relevance)
 ## - some API/JSON-response fields weren't used (YearInitial, YearFinal for
@@ -12,9 +12,8 @@
 ##  - this registry file is related to other files: provenance-mapping file,
 ##    BTE code, and an example of a processed association. 
 ##  - in the future? have a script alerting developer of DisGeNET update.
-##    Then workflow: review the new DisGeNET data, change the pipeline
-##    to update myDisease.info API if needed, AND update the metadata files
-##    (the registry + linked files described above) as-needed
+##    Workflow: review the new DisGeNET data, change the parser if needed,
+##    update the metadata files if needed 
 ## this is 79 char long #######################################################
 
 components:      
@@ -46,18 +45,16 @@ components:
         responseField: "disgenet.gene_related_to_disease.gene_id"
       ## WHAT the relationship is
       predicateInfo:  
-      ## biolink / id / label are static and set here in the registry, so
-      ##   the staticValue schema is used. 
-      ## see the schema for other possible situations 
+      ## biolink / id / label use staticValue sub-schema to set these values
+      ##   in the registry
         biolink:  ## similar to TRAPI/biolink predicate field
-          value: "related_to"  ## ?? 'biolink:' prefix required
+          value: "related_to"  ## ?? 'biolink:' prefix 
         id:  ## similar to TRAPI/biolink relation field
           value: "SIO:001403" 
         label: 
           value: "SIO:is_associated_with"
         nodesConflated:  ## optional 
-        ## note from CX: DisGeNET disease-gene relationships appear to 
-        ##   conflate the biolink entity classes 
+        ## DisGeNET disease-gene relationships appear to conflate the biolink entity classes 
         - original: Disease
           conflated: PhenotypicFeature
           where: DisGeNET
@@ -68,13 +65,11 @@ components:
         publications:
         ## the supporting publications are PMIDs (no prefixes) stored as 
         ##   an array of ints in the pubmed field of the API/JSON-response
-        ## uses the takesOnResponseValue schema since that formatting is fine
-        ## see the schema for other possible situations and the 
-        ##   processed association schema for what formatting would be fine
+        ## uses the takesOnResponseValue sub-schema since that format is fine
+        ##   for the final values (see the processed association schema)
           pmid: 
             responseField: "disgenet.genes_related_to_disease.pubmed"
-        websites:    ## uses the transformUsingTemplate schema
-        ## see the schema for other possible situations
+        websites:    ## uses the transformUsingTemplate sub-schema
           instructions: >-
             Create an array of one or more strings using the template. There
             should be a separate URL for each disease ID. Each association
@@ -89,11 +84,10 @@ components:
             gene: "disgenet.genes_related_to_disease.gene_id"
             disease: "inputs[0]"
             ## the UMLS Disease IDs (no prefix), used as input to the query
-            ## should be an array of one or more strings (disease IDs)
+            ## should be an array of one or more strings 
           bteCode: ""  
           ## github link to the code that uses this info to process response
-      provenance:  ## uses the transformResponseValues schema
-      ## see the schema for other possible situations 
+      provenance:  ## uses the transformResponseValues sub-schema
         instructions: >- 
           Map from a specific association/JSON-record and its value in the
           source field to an array of objects describing the sources (standard
@@ -112,7 +106,7 @@ components:
       - name: "DisGeNET gene-disease association score"
         responseField: "disgenet.genes_related_to_disease.score"
         measureReferences:
-          websites:   ## uses staticValue schema
+          websites:   ## uses staticValue sub-schema
             value: "https://www.disgenet.org/dbinfo#section31"
         range:
           minExclusive: 0
@@ -122,7 +116,7 @@ components:
       - name: "DisGeNET evidence index"
         responseField: "disgenet.genes_related_to_disease.EI"
         measureReferences:
-          websites:      ## uses staticValue schema
+          websites:    ## uses staticValue sub-schema
             value: "https://www.disgenet.org/dbinfo#section36"
         missingValueMeaning: >-
           This measure is calculated from BeFree and PsyGeNET info. If the
@@ -132,12 +126,12 @@ components:
           minExclusive: 0
           maxInclusive: 1
         directionMeaning:
-          larger: more_consistent
+          larger: less_conflicting_evid
       - name: "DisGeNET disease specificity index"
         ontologyTerm: 'SIO:001351'
         responseField: "disgenet.genes_related_to_disease.DSI"
         measureReferences:
-          websites:       ## uses staticValue schema
+          websites:    ## uses staticValue sub-schema
             value: "https://www.disgenet.org/dbinfo#section33"   
         missingValueMeaning: >-
           This measure is calculated when a gene is associated with one or
@@ -152,7 +146,7 @@ components:
         ontologyTerm: 'SIO:001352'
         responseField: "disgenet.genes_related_to_disease.DPI"
         measureReferences:
-          websites:        ## uses staticValue schema
+          websites:    ## uses staticValue sub-schema
             value: "https://www.disgenet.org/dbinfo#section34"    
         missingValueMeaning: >-
           This measure is calculated when a gene is associated with one or
