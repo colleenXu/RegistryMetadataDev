@@ -24,7 +24,7 @@ description: >-
 ## schema corresponds to oneAssociationRetrievalObj in the registry schema
 ## however, there are differences in structure/type 
 required:
-## don't need queryInfo, inputs, outputs since BTE uses this to automatically
+## don't need inputsAndQueryInfo, outputs since BTE uses this to automatically
 ##   handle the querying and some of the node resolution
 - predicateInfo
 ## strongly recommended: provenance, references
@@ -39,8 +39,8 @@ properties:
     properties: 
       biolink: 
         description: >-
-          Biolink predicate that best describes the association. Similar to
-          the biolink/TRAPI predicate
+          Biolink predicate (from the biolink related_to hierarchy) that best
+          describes the association. Similar to the biolink/TRAPI predicate
         type: string
       id:
         description: >-
@@ -51,8 +51,6 @@ properties:
       label:
         description: Human-readable label for id field above
         type: string
-      ## don't need nodesConflated? BTE could use it in the automatic querying
-      ##   and processing. See the registry schema file for more thoughts
   references:    ## need the specific references for this edge 
     $ref: '#/definitions/referenceObj' 
   provenance:   ## need the specific provenance for this edge 
@@ -82,7 +80,7 @@ properties:
   numericMeasures:  
     description: >-
       Array of objects (Python list-of-dict-like). Gives measure info and
-      which API/JSON-response field to retrieve it from
+      which API response field to retrieve it from
     type: array
     minItems: 1
     items:
@@ -90,7 +88,7 @@ properties:
   categoricalMeasures:
     description: >-
       Array of objects (Python list-of-dict-like). Gives measure info and
-      which API/JSON-response field to retrieve it from
+      which API response field to retrieve it from
     type: array
     minItems: 1
     items:
@@ -112,9 +110,8 @@ definitions:
         type: object
         minProperties: 1
         patternProperties:
-        ## keys are ID namespace, all-lowercase. 
-        ## Examples: pmid, pmc, doi, biorixv, medrxiv
-          .:            
+        ## keys are ID namespace, all-lowercase. Add more as-needed
+          pmid|pmc|doi|biorixv|medrxiv:         
             ## allows for numbers for ID numbers 
             oneOf:  
             - type: array
@@ -136,6 +133,10 @@ definitions:
     - name
     - sourceType
     additionalProperties: False
+    ##  only include other fields (method, sourceContext, sourceReferences, 
+    ##    descriptiveInfo) if the info will likely remain static 
+    ##  version only included if it would be possible to automatically update,
+    ##    otherwise I just left a comment      
     properties:
       name:
         description: >-
@@ -143,7 +144,7 @@ definitions:
           corpus, etc)
         type: string
       sourceType:
-        ## ?? set as enum (set options)                      
+        ## ?? later set enum (limited options)                    
         description: >-
           Type of the source (KP API, knowledge-source, database, text
           corpus, etc). Current possible values include service,
@@ -154,16 +155,18 @@ definitions:
           Source version (KP API, knowledge-source, database, text corpus, etc)
         type: string
       versionType:
-        ## ?? set as enum (set options)                      
+      ## ?? later set enum (limited options)
+      ##    use if-then to require this if version is present
         description: >-
           There are different formats for versioning. Current possible values
           include date_last_updated, version_number, data_from_this_date,
           latest_date_covered
         type: string
       method:
-        ## Ideally, very similar methods have the same values. The many 
-        ##   possible options make it hard to make as an enum. 
-        ## Note that some sources won't have methods (like text corpus...)
+        ## Ideally, very similar methods have the same values
+        ## Hard to make enum (many possible values)
+        ## Some sources won't have methods (publications). May not be able to 
+        ##  specify a method for others (ambiguous / missing info)
         description: >-
           Keyword noting what the source did to create associations from data
           or knowledge. Current possible values include ingest, NLP,
@@ -175,9 +178,9 @@ definitions:
         ## submission means people made the associations but their work wasn't 
         ##   necessarily made or reviewed by curators      
       sourceReferences:
-      ## for publications/websites with info on how associations were made
-      ## likely used to pick the sourceType/method/sourceContext and write
-      ##   descriptiveInfo
+      ## for publications/websites describing how associations were made
+      ## used to pick sourceType/method/sourceContext and write descriptiveInfo
+      ## static, doesn't depend on response
         $ref: '#/definitions/referenceObj'  
       descriptiveInfo:      
         description: >-
@@ -188,9 +191,10 @@ definitions:
       sourceContext:
       ## used when the source was species-specific, disease-specific, etc
       ## associations from the source could still be widely applicable
+      ## static, doesn't depend on response
         $ref: '#/definitions/contextObj' 
 ## this is 79 char long #######################################################
-## oneNumericMeasure and oneCategoricalMeasure build on the generalMeasure schema
+## oneNumericMeasure and oneCategoricalMeasure build on generalMeasure
   generalMeasure:
     type: object
     required:
@@ -213,6 +217,7 @@ definitions:
         type: string
       measureReferences:  
       ## put publications/websites with more info on the measure here
+      ## static, doesn't depend on response
         $ref: '#/definitions/referenceObj'           
   oneNumericMeasure:
   ## includes additional requirements, like direction and value.
@@ -269,6 +274,7 @@ definitions:
             closer to the lower bound)
           type: object
           minProperties: 1
+          ## ?? later set enum (limited options)
           patternProperties:
             .:
               type: string                    

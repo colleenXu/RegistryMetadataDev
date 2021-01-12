@@ -338,6 +338,14 @@ components:
         biolink:  
           value: "related_to"  
         id:  
+          responseField: direct_evidence
+          mappingFile: 
+          
+              "default": "related via shared gene anotation"
+              "marker/mechanism": "contributed or caused by"
+              "therapeutic": "treated by"
+        
+        
           value: "SIO:001403" 
         label: 
           value: "SIO:is_associated_with"
@@ -443,31 +451,34 @@ components:
     ##   fields: ctd.pathway_related_to_disease, request body: "q": "D009102",
     ##   "scopes": "mondo.xrefs.mesh, disgenet.xrefs.mesh"
     ## Execute this query and see the results
-      queryInfo:  
-        supportBatch: true
-        inputSeparator: ","
-        path: "/query"
-        method: "post"
-        parameters:  
-        ## ?? set size since this could return a lot of results?
-          fields: "ctd.pathway_related_to_disease"
-        requestBody:
-          body:
-            q: "{inputs[0]}"
-            scopes: "mondo.xrefs.mesh, disgenet.xrefs.mesh"
-          header: "application/x-www-form-urlencoded"
+
       inputs:  
       - id: MESH
         semantic: Disease
         requiresPrefix: false
+        queryInfo:  
+          supportBatch: true
+          inputSeparator: ","
+          path: "/query"
+          method: "post"
+          parameters:  
+          ## ?? set size since this could return a lot of results?
+            fields: "ctd.pathway_related_to_disease"
+          requestBody:
+            body:
+              q: "{inputs[0]}"
+              scopes: "mondo.xrefs.mesh, disgenet.xrefs.mesh"
+            header: "application/x-www-form-urlencoded"        
+        
+        
+        
+        
       outputs:   ## ?? ask Kevin if having two outputs like this works
       - id: REACT
         semantic: Pathway   
-        containsPrefix: false
         responseField: "ctd.chemical_related_to_disease.react_pathway_id"
       - id: KEGG
         semantic: Pathway   
-        containsPrefix: false
         responseField: "ctd.chemical_related_to_disease.kegg_pathway_id"
       predicateInfo:  
       ## biolink / id / label are static and set here in the registry, so

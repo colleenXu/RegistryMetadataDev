@@ -1,0 +1,171 @@
+## example of using the x-bte-association-retrieval schema 
+##   to write registry entries for querying Automat HMDB API
+##   (current registry's 6 operations)
+## notes about this specific registry entry: 
+## - some API/JSON-response fields weren't used 
+## - API has a few operations that aren't described here
+## - response fields here come from BTE "pre-processed" API response. See 
+##   https://github.com/biothings/biothings_explorer/blob/master/
+##   biothings_explorer/api_preprocess/scibite.py
+## - used raw API response examples and predicate endpoint to decide that
+##   predicateInfo is static and can be modeled with staticValue sub-schema.
+##   See https://automat.renci.org/hmdb/predicates
+
+## notes for developers:
+## - this registry file is linked to other files: BTE code. 
+## this is 79 char long #######################################################
+
+## notes for CX:
+## - removed gene2disease, disease2gene because I didn't see them in 
+##   https://automat.renci.org/hmdb/predicates 
+## - hard to construct website urls for hmdb: need HMDB IDs which are either
+##   not in the API response or "hidden" in the nodes' equivalent IDs array
+##   (have to iterate through this array to find the matching string, then
+##   take only the ID (not the prefix)
+## - ask Kevin: parameters for operations 2-4 are a different format to the
+##   gene-input operations above. keep or change this? See
+##   https://github.com/NCATS-Tangerine/translator-api-registry/blob/master/
+##   hmdb/smartapi.yaml
+
+## questions for RENCI:
+## - are CHEMBL.COMPOUND and DOID still used for node main IDs? 
+## - other -> ChemicalSubstance queries return only ChemicalSubstance -> other
+##   associations. In some cases, the predicate is specific for
+##   ChemicalSubstance -> other, so...BTE has to assign the inverse predicate?
+##   raw API response example:
+##   https://automat.renci.org/hmdb/gene/chemical_substance/NCBIGene:5972
+##   notice all results are organized as ChemicalSubstance -> Gene
+##   and the names of some ChemicalSubstance nodes are blank or CHEMBL IDs...
+## - the raw API/JSON-response has a publications field, but I always see an
+##   empty array...
+## - check provenance
+
+components:      
+  x-bte-association-retrieval:  
+    gene2chemical:  ## 1   
+      inputsAndQueryInfo:  ## required
+      - id: NCBIGene
+        semantic: Gene
+        requiresPrefix: true
+        queryInfo:  
+          ## assume supportBatch is false
+          parameters:
+            geneid: "NCBIGene:{inputs[0]}"
+      outputs:   ## required
+      - id: CHEBI
+        semantic: ChemicalSubstance
+        ## based on pre-processing 
+        containsPrefix: true
+        responseField: "associated_with.chebi"
+      - id: CHEMBL.COMPOUND
+        semantic: ChemicalSubstance  
+        ## based on pre-processing, no prefix in output IDs
+        responseField: "associated_with.chembl"        
+      predicateInfo:  ## biolink / id use the staticValue sub-schema
+      ## fine since they're all symmetrical predicates
+        biolink:   
+          value: "interacts_with"
+        id:   
+          value: "RO:0002434" ## (also interacts_with)
+      provenance:  
+        $ref: '#/definitions/automatProvenance'
+    chemical2gene:  ## 2
+      inputsAndQueryInfo:  
+      - id: CHEBI
+        semantic: ChemicalSubstance
+        requiresPrefix: true
+        queryInfo:  
+          ## assume supportBatch is false
+          parameters:  
+            chebi: "{inputs[0]}"
+      outputs:   
+      - id: NCBIGene
+        semantic: Gene  
+        ## based on pre-processing, no prefix in output IDs
+        responseField: "associated_with.ncbigene"
+      predicateInfo:  ## biolink / id use the staticValue sub-schema
+      ## fine since they're all symmetrical predicates
+        biolink:   
+          value: "interacts_with"
+        id:   
+          value: "RO:0002434" ## (also interacts_with)
+      provenance:  
+        $ref: '#/definitions/automatProvenance'  
+    chemical2disease:  ## 3
+      inputsAndQueryInfo:  
+      - id: CHEBI
+        semantic: ChemicalSubstance
+        requiresPrefix: true
+        queryInfo:  
+          ## assume supportBatch is false
+          parameters: 
+            chebi: "{inputs[0]}"
+      outputs:   
+      - id: MONDO
+        semantic: Disease 
+        ## based on pre-processing 
+        containsPrefix: true
+        responseField: "associated_with.mondo"
+      - id: DOID
+        semantic: Disease 
+        ## based on pre-processing 
+        containsPrefix: true
+        responseField: "associated_with.doid"        
+      predicateInfo:  ## biolink / id use the staticValue sub-schema
+        biolink:   
+          value: "related_to"
+        id:   
+          value: "SEMMEDDB:ASSOCIATED_WITH" 
+      provenance:  
+        $ref: '#/definitions/automatProvenance'
+    disease2chemical:   ## 4
+      inputsAndQueryInfo:  
+      - id: MONDO
+        semantic: Disease
+        requiresPrefix: true
+        queryInfo:  
+          ## assume supportBatch is false
+          parameters:  
+            mondo: "{inputs[0]}"  
+      outputs:   ## required
+      - id: CHEBI
+        semantic: ChemicalSubstance
+        ## based on pre-processing 
+        containsPrefix: true
+        responseField: "associated_with.chebi"
+      - id: CHEMBL.COMPOUND
+        semantic: ChemicalSubstance  
+        ## based on pre-processing, no prefix in output IDs
+        responseField: "associated_with.chembl"        
+      predicateInfo:  ## biolink / id use the staticValue sub-schema
+        biolink:   
+          value: "related_to"
+        id:   
+          value: "SEMMEDDB:ASSOCIATED_WITH" 
+      provenance:  
+        $ref: '#/definitions/automatProvenance'
+## this is 79 char long #######################################################
+definitions:
+  automatProvenance:
+  - name: "Automat HMDB API"
+    sourceType: service
+    ## not clear what the version is
+    method: ingest  
+    descriptiveInfo: >- 
+      Likely parsed HMDB metabolite data and created associations
+      from the annotations (including what diseases, pathways, gene/proteins,
+      etc are linked to the metabolite)
+  - name: "HMDB"
+    sourceType: knowledgebase
+    ## Automat doesn't give version info for this
+    sourceReferences:
+      publications:
+        pmid:   ## uses staticValue sub-schema
+          value: "29140435"
+      websites:    ## uses staticValue sub-schema
+        value: "https://hmdb.ca/sources"
+    descriptiveInfo: >- 
+      Note from CX; method not assigned because it was unclear. May be a mix
+      of manual curation (aided by text mining tools), in silico prediction of
+      metabolites and their reacting enzymes, and ingestion / review of info
+      from other sources (OMIM, OMMBID, Merck Manual, KEGG, MetaCyc)

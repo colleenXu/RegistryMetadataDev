@@ -2,7 +2,7 @@
 ##   to write registry entries for querying MyDisease.info API
 ##   (operations based on disgenet data)
 ## notes about this specific registry entry: 
-## - some API/JSON-response fields weren't used (YearInitial, YearFinal for
+## - some API/JSON-response fields weren't modeled (YearInitial, YearFinal for
 ##   the years first and last reported)
 ## - MyDisease.info is a complex API with a lot of operations/sources that
 ##   aren't included here
@@ -12,57 +12,50 @@
 ##   BTE code, and an example of a processed association. 
 ## this is 79 char long #######################################################
 
-## other notes:
-## - Kevin still has to set up disease-disease1 operation using
+## notes for Kevin:
+## - set up disease-disease1 operation using
 ##   https://www.disgenet.org/static/disgenet_ap1/files/downloads/disease_to_disease_CURATED.tsv.gz
+## - could merge disease-variant associations (when only diff is pubmed field)
 
 components:      
+  ## operations to query KPs for associations go under this x-bte extension
   x-bte-association-retrieval:  
+  ## each object below describes one operation 
     disease-gene1:  ## name for this particular operation
-    ## raw API/JSON-response example used to help write this:
-    ## http://mydisease.info/v1/disease/MONDO:0016419?fields=disgenet.genes_related_to_disease
-      queryInfo:  ## required
-        supportBatch: true
-        inputSeparator: ","
-        parameters:
-          fields: "disgenet.genes_related_to_disease"
-        requestBody:
-          body:     
-            q: "{inputs[0]}"
-            scopes: "mondo.xrefs.umls, disgenet.xrefs.umls"
-          header: "application/x-www-form-urlencoded"
-      inputs:  ## required
+    ## raw API response example used to help write this:
+    ## http://mydisease.info/v1/disease/MONDO:0016419?fields=
+    ##   disgenet.genes_related_to_disease
+      inputsAndQueryInfo:  ## required
+      ## ?? add UMLS, PhenotypicFeature? 
       - id: UMLS
         semantic: Disease
-        ## ?? need to check pre-processing code to check if this is right
-        requiresPrefix: false
+        ## ?? check that input IDs don't have prefixes
+        queryInfo:  ## required
+          supportBatch: true
+          inputSeparator: ","
+          parameters:
+            fields: "disgenet.genes_related_to_disease"
+          requestBody:
+            body:     
+              q: "{inputs[0]}"
+              scopes: "mondo.xrefs.umls, disgenet.xrefs.umls"
+            header: "application/x-www-form-urlencoded"        
       outputs:   ## required
       - id: NCBIGene
         semantic: Gene  
-        containsPrefix: false
+        ## assume no prefix in output IDs
         responseField: "disgenet.gene_related_to_disease.gene_id"
-      ## WHAT the relationship is
-      predicateInfo:  
-      ## biolink / id / label use staticValue sub-schema to set these values
-      ##   in the registry
-        biolink:  ## similar to TRAPI/biolink predicate field
-          value: "related_to"  ## ?? 'biolink:' prefix 
-        id:  ## similar to TRAPI/biolink relation field
+      predicateInfo:   ## required
+      ## biolink / id / label use staticValue sub-schema 
+        biolink:  
+          value: "related_to"  
+        id:  
           value: "SIO:001403" 
         label: 
-          value: "SIO:is_associated_with"
-        nodesConflated:  ## optional 
-        ## DisGeNET disease-gene relationships appear to conflate the biolink entity classes 
-        - original: Disease
-          conflated: PhenotypicFeature
-          where: DisGeNET
-        - original: Gene
-          conflated: GeneProduct
-          where: DisGeNET   
+          value: "SIO:is_associated_with" 
       references:  ## optional, include when possible
         publications:
-        ## the supporting publications are PMIDs (no prefixes) stored as 
-        ##   an array of ints in the pubmed field of the API/JSON-response
+        ## API response field is an array of ints (PMIDs, no prefixes) 
         ## uses the takesOnResponseValue sub-schema since that format is fine
         ##   for the final values (see the processed association schema)
           pmid: 
@@ -70,9 +63,10 @@ components:
         websites:    ## uses the transformUsingTemplate sub-schema
           instructions: >-
             Create an array of one or more strings using the template. There
-            should be a separate URL for each disease ID. Each association
-            should have one source and one gene ID. Result should be a key
-            (websites) with a value (the array of string website URLs)
+            should be a separate URL for each disease ID. Use the source
+            keyword and gene ID in the association. Result in processed
+            association should be a key (websites) -> array of webpage URL
+            strings (see processed association schema)
           ## this should be parsed as one string with no spaces
           template:
             "https://www.disgenet.org/browser/0/1/1/{disease}/\
@@ -85,22 +79,21 @@ components:
             ## should be an array of one or more strings 
           bteCode: ""  
           ## github link to the code that uses this info to process response
-      provenance:  ## uses the transformResponseValues sub-schema
+      provenance:  ## optional, include when possible  
+      ## uses the transformResponseValues sub-schema
         instructions: >- 
-          Map from a specific association/JSON-record and its value in the
-          source field to an array of objects describing the sources (standard
-          provenance model). This mapping is stored in the mappingFile YAML
-          within the provenanceMapping object. Result should be a key
-          (provenance) with a value (the array of objects describing the
-          sources)
+          Map from the association source field value to an array of objects
+          describing the sources (standard provenance model) using the 
+          provenanceMapping object in the linked mapping file. Result in
+          processed association should be a key (provenance) -> array of
+          source info objects (see processed association schema)
         responseFieldsUsed: "disgenet.genes_related_to_disease.source"
-        mappingFile: "draft6_example_mappingFile_disgenetDG.yaml"
+        mappingFile: "draft7_mappingFile_disgenetDG.yaml"
         ## github link to file
         ## ?? use mappingFile to get source info for metaKG
         bteCode: ""  
         ## github link to the code that uses this info to process response
-      numericMeasures:  
-      ## describes association-related numeric measures 
+      numericMeasures:    ## optional, include when needed
       - name: "DisGeNET gene-disease association score"
         responseField: "disgenet.genes_related_to_disease.score"
         measureReferences:
@@ -159,50 +152,45 @@ components:
     disease-variant1:  ## name for this operation      
     ## raw API/JSON-response example used to help write this:
 ## http://mydisease.info/v1/disease/MONDO:0016419?fields=disgenet.variants_related_to_disease
-      queryInfo:  ## required
-        supportBatch: true
-        inputSeparator: ","    
-        parameters:
-          fields: "disgenet.variants_related_to_disease"        
-        requestBody:
-          body:     
-            q: "{inputs[0]}"
-            scopes: "mondo.xrefs.umls, disgenet.xrefs.umls"
-          header: "application/x-www-form-urlencoded"
-      inputs:  ## required
+      inputsAndQueryInfo:  
+      ## ?? add UMLS, PhenotypicFeature?
       - id: UMLS
         semantic: Disease
-        ## ?? need to check pre-processing code to check if this is right
-        requiresPrefix: false
-      outputs:   ## required
+        ## ?? check that input IDs don't have prefixes
+        queryInfo:  
+          supportBatch: true
+          inputSeparator: ","    
+          parameters:
+            fields: "disgenet.variants_related_to_disease"        
+          requestBody:
+            body:     
+              q: "{inputs[0]}"
+              scopes: "mondo.xrefs.umls, disgenet.xrefs.umls"
+            header: "application/x-www-form-urlencoded"
+      outputs:   
       - id: DBSNP
         semantic: SequenceVariant  
-        containsPrefix: false
+        ## assume no prefix in output IDs
         responseField: "disgenet.variants_related_to_disease.rsid"        
-      predicateInfo:  
-      ## biolink / id / label use staticValue sub-schema to set these values
-      ##   in the registry
+      predicateInfo:  ## biolink / id / label use staticValue sub-schema 
         biolink:  
           value: "related_to"  
         id:  
           value: "SIO:001403" 
         label: 
-          value: "SIO:is_associated_with"        
-        nodesConflated:  ## optional 
-        ## note from CX: DisGeNET appears to conflate the biolink entity classes
-        - original: Disease
-          conflated: PhenotypicFeature
-          where: DisGeNET
-      references:  ## optional, include when possible
+          value: "SIO:is_associated_with"  
+      references:  
         publications:
+        ## uses the takesOnResponseValue sub-schema
           pmid: 
-            responseField: "disgenet.variants_related_to_disease.pubmed"          
+            responseField: "disgenet.variants_related_to_disease.pubmed"
         websites:    ## uses the transformUsingTemplate sub-schema
           instructions: >-
             Create an array of one or more strings using the template. There
-            should be a separate URL for each disease ID. Each association
-            should have one source and one SNP rs ID. Result should be a key
-            (websites) with a value (the array of string website URLs)
+            should be a separate URL for each disease ID. Use the source
+            keyword and SNP ID in the association. Result in processed
+            association should be a key (websites) -> array of webpage URL
+            strings (see processed association schema)
           ## this should be parsed as one string with no spaces
           template:
             "https://www.disgenet.org/browser/0/1/5/{disease}/\
@@ -215,19 +203,16 @@ components:
             ## should be an array of one or more strings 
           bteCode: ""  
           ## github link to the code that uses this info to process response
-      ## @@ ask Kevin if he merged by rows with all the same except pubmed
       provenance:  ## uses the transformResponseValues sub-schema
         instructions: >- 
-          Map from a specific association/JSON-record and its value in the
-          source field to an array of objects describing the sources (standard
-          provenance model). This mapping is stored in the mappingFile JSON
-          within the provenanceMapping object. Result should be a key
-          (provenance) with a value (the array of objects describing the
-          sources)
+          Map from the association source field value to an array of objects
+          describing the sources (standard provenance model) using the 
+          provenanceMapping object in the linked mapping file. Result in
+          processed association should be a key (provenance) -> array of
+          source info objects (see processed association schema)
         responseFieldsUsed: "disgenet.variants_related_to_disease.source"
-        mappingFile: "draft6_example_mappingFile_disgenetDV.yaml"  
+        mappingFile: "draft7_mappingFile_disgenetDV.yaml"  
         ## github link to file
-        ## ?? use mappingFile to get source info for metaKG
         bteCode: ""  
         ## github link to the code that uses this info to process response        
       numericMeasures:  
@@ -292,51 +277,42 @@ components:
     ##   fields: disgenet.xrefs.umls, size: 250, request body: "q": "1629",
     ##   "scopes": "disgenet.genes_related_to_disease.gene_id"
     ## Execute this query and see the results
-      queryInfo:  ## required
-        supportBatch: true
-        inputSeparator: ","    
-        parameters:
-          fields: "disgenet.xrefs.umls"    
-          size: "250"
-        requestBody:
-          body:     
-            q: "{inputs[0]}"
-            scopes: "disgenet.genes_related_to_disease.gene_id"
-          header: "application/x-www-form-urlencoded"
-      inputs:  ## required
+      inputsAndQueryInfo: 
       - id: NCBIGene
         semantic: Gene
-        requiresPrefix: false
-      outputs:   ## required
+        ## assume no prefix in input IDs
+        queryInfo:  
+          supportBatch: true
+          inputSeparator: ","    
+          parameters:
+            fields: "disgenet.xrefs.umls"    
+            size: "250"
+          requestBody:
+            body:     
+              q: "{inputs[0]}"
+              scopes: "disgenet.genes_related_to_disease.gene_id"
+            header: "application/x-www-form-urlencoded"        
+      outputs: 
+      ## ?? add UMLS, PhenotypicFeature?
       - id: UMLS
-        semantic: Disease  
-        containsPrefix: false
+        semantic: Disease
+        ## assume no prefix in output IDs
         responseField: "disgenet.xrefs.umls"
-      predicateInfo:  
-      ## biolink / id / label use staticValue sub-schema to set these values
-      ##   in the registry
+      predicateInfo:  ## biolink / id / label use staticValue sub-schema 
         biolink:  
           value: "related_to"  
         id:  
           value: "SIO:001403" 
         label: 
-          value: "SIO:is_associated_with"
-        nodesConflated:  ## optional 
-        ## note from CX: DisGeNET disease-gene relationships appear to conflate the biolink entity classes 
-        - original: Disease
-          conflated: PhenotypicFeature
-          where: DisGeNET
-        - original: Gene
-          conflated: GeneProduct
-          where: DisGeNET   
-      ## while we currently can't get publications, we can send users to 
-      ##   the disgenet source webpage for more info...
+          value: "SIO:is_associated_with" 
+      ## we can send users to the disgenet source webpage for more info...
       references:         
         websites:    ## uses the transformUsingTemplate sub-schema
           instructions: >-
             Create an array of one or more strings using the template. There
-            should be a separate URL for each gene ID. Result should be a key
-            (websites) with a value (the array of string website URLs)
+            should be a separate URL for each gene ID. Result in processed
+            association should be a key (websites) -> array of webpage URL
+            strings (see processed association schema)
           ## example: https://www.disgenet.org/browser/1/1/0/1629/
           template:
             "https://www.disgenet.org/browser/1/1/0/{gene}/"
@@ -359,10 +335,9 @@ components:
         sourceType: knowledgebase
         version: "7.0"
         versionType: "version_number"
-        ## not including method since association doesn't include enough info
-        ##   to know what specific method was used
+        ## not including method since there isn't enough info 
         sourceReferences: 
-          websites: 
+          websites:       ## uses staticValue sub-schema
             value: "https://www.disgenet.org/dbinfo#section11"    
         descriptiveInfo: >- 
           The DisGeNET team created gene-disease associations using various
@@ -372,49 +347,43 @@ components:
     ## example: go to http://mydisease.info/#/query/post_query. Set...
     ##   fields: disgenet.xrefs.umls, size: 250, request body: "q": "rs1001179",
     ##   "scopes": "disgenet.variants_related_to_disease.rsid"
-    ## Execute this query and see the results.     
-      queryInfo:  ## required
-        supportBatch: true
-        inputSeparator: ","    
-        parameters:
-          fields: "disgenet.xrefs.umls"    
-          size: "250"
-        requestBody:
-          body:     
-            q: "{inputs[0]}"
-            scopes: "disgenet.variants_related_to_disease.rsid"
-          header: "application/x-www-form-urlencoded"    
-      inputs:  ## required
+    ## Execute this query and see the results.      
+      inputsAndQueryInfo: 
       - id: DBSNP
         semantic: SequenceVariant
-        requiresPrefix: false
-      outputs:   ## required
+        ## assume no prefix in input IDs
+        queryInfo:  
+          supportBatch: true
+          inputSeparator: ","    
+          parameters:
+            fields: "disgenet.xrefs.umls"    
+            size: "250"
+          requestBody:
+            body:     
+              q: "{inputs[0]}"
+              scopes: "disgenet.variants_related_to_disease.rsid"
+            header: "application/x-www-form-urlencoded"
+      outputs:  
+      ## ?? add UMLS, PhenotypicFeature?
       - id: UMLS
         semantic: Disease  
-        containsPrefix: false
+        ## assume no prefix in output IDs
         responseField: "disgenet.xrefs.umls"    
-      predicateInfo:  
-      ## biolink / id / label use staticValue sub-schema to set these values
-      ##   in the registry
+      predicateInfo:  ## biolink / id / label use staticValue sub-schema
         biolink:  
           value: "related_to"  
         id:  
           value: "SIO:001403" 
         label: 
-          value: "SIO:is_associated_with"
-        nodesConflated:  ## optional 
-        ## note from CX: DisGeNET appears to conflate the biolink entity classes 
-        - original: Disease
-          conflated: PhenotypicFeature
-          where: DisGeNET       
-      ## while we currently can't get publications, we can send users to 
-      ##   the disgenet source webpage for more info...
+          value: "SIO:is_associated_with"     
+      ## we can send users to the disgenet source webpage for more info...
       references:         
         websites:    ## uses the transformUsingTemplate sub-schema
           instructions: >-
             Create an array of one or more strings using the template. There
-            should be a separate URL for each variant ID. Result should be a
-            key (websites) with a value (the array of string website URLs)
+            should be a separate URL for each variant ID. Result in processed
+            association should be a key (websites) -> array of webpage URL
+            strings (see processed association schema)
           ## example: https://www.disgenet.org/browser/2/1/0/rs1001179/
           template:
             "https://www.disgenet.org/browser/2/1/0/{snp}/"
@@ -430,17 +399,15 @@ components:
         version: "2020-10-26"
         versionType: "date_last_updated"
         method: ingest
-        ## @@ ask Kevin if he merged by rows with all the same except pubmed
         descriptiveInfo: >- 
           Downloaded the DisGeNET ALL variant-disease-pmid associations file.          
       - name: "DisGeNET"
         sourceType: knowledgebase
         version: "7.0"
         versionType: "version_number"
-        ## not including method since association doesn't include enough info
-        ##   to know what specific method was used
+        ## not including method since there isn't enough info 
         sourceReferences: 
-          websites:   ## for variant info
+          websites:        ## uses staticValue sub-schema
             value: "https://www.disgenet.org/dbinfo#section12"
         descriptiveInfo: >- 
           The DisGeNET team created variant-disease associations using various
