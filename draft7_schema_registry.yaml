@@ -7,7 +7,12 @@
 ## - x-bte-association-retrieval can be a separate metadata extension for now,
 ##   so code dependent on x-bte-kgs-operations (current) doesn't break 
 ## - from Andrew Su: for now, require less.
-## this is 79 char long #######################################################
+
+## issues / Q for Kevin marked @ or !!
+
+## notes:
+## - schema cannot enforce/check format for predicates from responseFields. However, during post-processing or later, we could string format (undercase, spaces -> underscore) and make curies
+## - if there are reference fields with multiple ID namespaces for an API operation, currently it seems we have to pre-process responses to create separate fields for each ID namespace...
 
 title: Schema for objects within x-bte-association-retrieval
 $schema: 'http://json-schema.org/draft-07/schema#'
@@ -16,615 +21,502 @@ description: >-
   Describes the x-bte-association-retrieval metadata extension within SmartAPI
   registry files. Knowledge-provider (KP) APIs in the Translator ecosystem
   provide associations/edges between biomedical entities. This extension
-  describes how to query these APIs and how to post-process their responses
-  and associated metadata into a standard format. Separate association-
-  retrieval operations have different metadata. 
+  includes 1) additional support for querying those APIs, 2) metadata for
+  processing API responses, and 3) metadata to add required fields to the API
+  responses
 required:
-- components
+  - components
 properties:
   components:
     type: object
-    ## don't require properties since not all APIs do association-retrieval
     properties:
       x-bte-association-retrieval:
-        type: object
-        ## if present, describe at least one operation of this type
+        definition: >-
+          Each key inside this object corresponds to one association-retrieval
+          operation, which consists of one Biolink entity class and a unique
+          set of metadata
+        type: object     
         minProperties: 1
         patternProperties:
-          .:          ## no naming format
-            $ref: '#/definitions/oneAssociationRetrievalObj'
+          .:  ## usually named inputType-outputType-number
+            $ref: '#/definitions/oneAssociationRetrievalObj'       
 definitions:
   oneAssociationRetrievalObj:
     type: object
     required:
-    - inputsAndQueryInfo
-    - outputs
-    - predicateInfo
-    ## strongly recommended: references, provenance
-    ## use as-needed: numericMeasures, categoricalMeasures, contextRelevance
+      - inputsAndQueryInfo
+      - outputs
+      - predicateInfo
+      - provenance
+    ## strongly recommended: references
+    ## use as-needed: requiresPreProcessing, numericMeasures,
+    ##   categoricalMeasures, contextRelevance 
     additionalProperties: False
     properties:
       inputsAndQueryInfo:
         description: >-
           Array of objects (Python list-of-dict-like). Describes valid inputs
-          (biolink entity class, ID namespace, etc) and how to query API 
-          starting with those inputs. When this array has >1 element, the
-          relationship between the objects for querying is OR (the API can
-          take A OR B as input)
+          (e.g. Biolink entity class, ID namespace) and additional info for
+          querying the API. When this array has >1 element, the relationship
+          between the elements is OR (the API can take A OR B as input).
+          Currently, all elements should have the same Biolink entity class, so
+          elements will differ in their ID namespace, queryInfo, or other
+          property
         type: array
         minItems: 1
         items:
-          $ref: '#/definitions/inputInfo'
+          type: object
+          required:
+            - id
+            - semantic
+            - queryInfo
+          additionalProperties: False
+          properties:
+            id:
+              description: >-
+                ID namespace prefix for biomedical entities in the query
+              type: string
+            semantic:
+              description: >-
+                Biolink entity class for biomedical entities in the query
+              type: string
+            requiresPrefix:
+              description: >-
+                Whether the API expects curies (prefixed IDs) or not. If this
+                field is absent, assume False (prefixes not needed)
+              type: boolean
+            ## for now, comment if the API's expected prefix =/= the id value
+            ##   (prefix Translator is using). We likely have to handle that
+            ##   in query construction
+            queryInfo:
+              description: >- 
+                Contains info on the query (API call) for this operation. The
+                OpenAPI /paths/operations may have specific fields (e.g.
+                parameters, responseBody), and these can be set here
+
+## this is 79 char long #######################################################          
+## - flag when prefix in data (references, biolink) doesn't match the key (Biolink, pubmed; call it prefixMatchesKey)? Or BTE can automatically remove prefix (whether it matches or not) / replace prefix with key
+## - assuming only one delimiter per response field stringList thing...
+## @ consider adding back a key ("when the record doesn't have this key inside...") -> use this value to for it (previously the "default" key)  
+              type: object
+              minProperties: 1
+              ## Andrew Su: don't require supportBatch 
+              ## Kevin: can add simple typing, but name/structure depends on
+              ##   what's in the SmartAPI/OpenAPI sections
+              properties:
+                supportsBatch:
+                  description: >-
+                    If this field is absent, assume False (API does not support
+                    batch querying)
+                  type: boolean
+                inputSeparator:
+                  type: string
+                path: 
+                  type: string
+                method:
+                  type: string
+                parameters:
+                  type: object
+                requestBody:
+                  type: object  
       outputs:
         description: >-
           Array of objects (Python list-of-dict-like). Describes valid outputs
-          (biolink entity class, ID namespace, etc) and their
-          API response field. When this array has >1 element, the
-          relationship between the objects for response-mapping is OR (the
-          output is described by A OR B)
+          (biolink entity class, ID namespace, etc) and their corresponding
+          API (JSON) response field. When this array has >1 element, the
+          relationship between the objects is OR (the output will be in
+          A OR B format)
         type: array
         minItems: 1
         items:
-          $ref: '#/definitions/outputInfo'
-      ## WHAT the relationship is
-      predicateInfo:
+          type: object
+          required:
+            - id
+            - semantic
+            - responseField
+          additionalProperties: False
+          properties:
+            id:
+              description: >-
+                ID namespace prefix for biomedical entities in the API response
+              type: string
+            semantic:
+              description: >-
+                Biolink entity class for biomedical entities in the API
+                response
+              type: string
+            responseField:  
+              description: >-
+                Dot-notation of the field in the API (JSON) response that
+                corresponds to the ID(s) of the biomedical entities
+              type: string
+            containsPrefix:
+              description: >-
+                Whether the IDs for the output biomedical entities are curies
+                (prefixed IDs) or not. If this field is absent, assume False
+              type: boolean
+      requiresPreProcessing:
+        description: >-
+          Whether the API-response-field mapping requires that BTE first
+          pre-process the raw API (JSON) response. If this field is absent,
+          assume False (no pre-processing needed)
+        type: boolean
+      predicateInfo:   ## groups predicates together
         type: object
         required:
-        - biolink
+          - biolink
+        ## strongly recommended: id (non-biolink predicate)
+        ## use as-needed: label, negated
         additionalProperties: False
-        properties:
-        ## biolink, id, label may be static or may be in the API response
-        ## (if it's in the API response, but always the same value, model it
-        ##  as static)
-        ## Choose a schema to handle the situation 
-          biolink:
-          ## biolink predicate that best describes the association
-          ## from biolink related_to hierarchy
-          ## ?? does values need 'biolink' prefix?
+        properties: 
+          biolink: 
             oneOf:
-            - $ref: '#/definitions/staticValue'
-            - allOf:
-              - $ref: '#/definitions/takesOnResponseValue'
-              ## allows metaKG to know what predicates are expected from API
-              - $ref: '#/definitions/enumForMetaKG'
-            - allOf:
-              - $ref: '#/definitions/transformResponseValues'
-              - $ref: '#/definitions/enumForMetaKG'
-          id:
-          ## relation (OWL ObjectProperty) that best describes the 
-          ## association. Curie format (prefix:ID). Assigned by Translator
-          ## team member or found in the original data. Similar to the 
-          ## biolink/TRAPI relation 
-            oneOf:
-            - $ref: '#/definitions/staticValue'
-            - allOf:
-              - $ref: '#/definitions/takesOnResponseValue'
-              - $ref: '#/definitions/enumForMetaKG'
-            - allOf:
-              - $ref: '#/definitions/transformResponseValues'
-              - $ref: '#/definitions/enumForMetaKG'
-          label:
-          ## Human-readable label for id field above
-            oneOf:
-            - $ref: '#/definitions/staticValue'
-            - allOf:
-              - $ref: '#/definitions/takesOnResponseValue'
-              - $ref: '#/definitions/enumForMetaKG'
-            - allOf:
-              - $ref: '#/definitions/transformResponseValues'
-              - $ref: '#/definitions/enumForMetaKG'
-      ## references, provenance strongly recommended
-      ## currently not required since not all Translator KP APIs
-      ##   provide this
-      references:  
-      ## supporting publications and source websites 
-        $ref: '#/definitions/referenceObj'        
-      ## WHERE the association and its related info come from, and HOW
-      provenance:
-        oneOf:
-        - $ref: '#/definitions/oneProvenanceList'
-          ## use if all associations come from the same sources
-          ##   so provenance is basically static
-        - $ref: '#/definitions/transformResponseValues' 
-          ## use for complex situations where associations may come from
-          ##   different sources. Values from the response often need to 
-          ##   be mapped to a standard way of describing sources   
-      ## MEASURES give INFO related to an association, can be EVIDENCE for it
-      ## optional, include when needed
-      numericMeasures:  
-        description: >-
-          Array of objects (Python list-of-dict-like). Gives measure info and
-          which API response field to retrieve it from
-        type: array
-        minItems: 1
-        items:
-          $ref: '#/definitions/oneNumericMeasure'      
-      categoricalMeasures:
-        description: >-
-          Array of objects (Python list-of-dict-like). Gives measure info and
-          which API response field to retrieve it from
-        type: array
-        minItems: 1
-        items:
-          $ref: '#/definitions/oneCategoricalMeasure'
-        ## I currently treat these as categorical variables (only one value
-        ##   per association. 
-        ## ?? how to treat columns/fields with lists that look like enums
-        ##    (take on a few values of a limited set) 
-      ## WHERE and WHEN is this association valid/relevant
-      contextRelevance:
-        $ref: '#/definitions/contextObj'
-      ## may set up fields later for other info, like what was used for
-      ##   triangulation (variant for disease->gene), text-mining,
-      ##   clinical-data/exposures
-## DEFINITIONS for sub-schemas used in oneAssociationRetrievalObj
-## note that nodesConflated removed 2021-01-11. Trying to handle similar issues
-##   with inputsAndQueryInfo, outputs (elements have "OR" relationship) 
-  inputInfo:
-    type: object
-    required:
-    - id
-    - semantic
-    - queryInfo
-    additionalProperties: False
-    properties:
-      id:
-        description: ID namespace prefix for biomedical entities in the query
-        type: string
-      semantic:
-        description: Biolink entity class for biomedical entities in the query
-        type: string
-      requiresPrefix:
-        description: >-
-          Whether the API expects curies (prefixed IDs) or not. If this
-          field is absent, assume False (prefixes not needed)
-        type: boolean        
-      queryInfo:
-        description: >- 
-          Contains info on the query (API call) for this operation. The
-          OpenAPI /paths/operations may have specific fields (like
-          parameters, responseBody, etc.), and these can be set here
-        type: object
-        minProperties: 1
-        ## from Andrew Su: don't require supportBatch 
-        ## from Kevin: can add simple typing, but name/structure depends on
-        ##   what's in the SmartAPI/OpenAPI sections
-        properties:
-          supportBatch:
-            description: >-
-              If this field is absent, assume False (API does not support batch
-              querying)
-            type: boolean
-          inputSeparator:
-            type: string
-          path: 
-            type: string
-          method:
-            type: string
-          parameters:
-            type: object
-          requestBody:
-            type: object
-  outputInfo:
-    type: object
-    required:
-    - id
-    - semantic
-    - responseField
-    additionalProperties: False
-    properties:
-      id:
-        description: >-
-          ID namespace prefix for biomedical entities in the API response
-        type: string
-      semantic:
-        description: >-
-          Biolink entity class for biomedical entities in the API response
-        type: string
-      responseField:  
-        description: >-
-          Dot-notation for the field in API (JSON) response that corresponds
-          to the ID(s) for the output biomedical entities
-        type: string
-      containsPrefix:
-        description: >-
-          Whether the IDs for the output biomedical entities are curies
-          (prefixed IDs) or not. If this field is absent, assume False
-          (prefixes not needed)
-        type: boolean        
-## sometimes the registry has static info; other times we want to tell others
-##   how to parse info from the API (JSON) response.  
-## To handle this, some fields must follow one of the following schemas:
-##  staticValue, takesOnResponseValue, transformResponseValues, 
-##  transformUsingTemplate
-  staticValue:
-    description: >-
-      Info set in registry, not dependent on API response. Use the value field
-    type: object
-    required:  
-    - value
-    additionalProperties: False
-    properties:
-      value: 
-        oneOf:  ## string or array of strings
-        - type: array
-          minItems: 1
-          items:
-            type: string
-        - type: string
-  enumForMetaKG:
-    description: >-
-      Used when metaKG needs the expected values of the API response, but
-      takesOnResponseValue or transformResponseValues is used in the metadata
-      (for parsing the API response)
-    type: object
-    required:
-    - enumValues
-    properties:
-      enumValues: 
-        type: array
-        minItems: 1
-        items:
-          type: string  
-  takesOnResponseValue:
-    description: >-
-      Info should be taken from the value of a specific field in the API
-      response. Use dot-notation to refer to the API response field
-    type: object
-    required:
-    - responseField   
-    properties:
-      responseField:  
-        type: string  
-  transformResponseValues:
-    description: >-
-      Info should be taken from the value of one or more specific fields in
-      the API response, THEN transformed/parsed into the standard format using
-      code. This often involves adding information. This may involve a mapping
-      from API response values to standardized info
-    type: object
-    required:
-    - instructions
-    - responseFieldsUsed
-    - bteCode
-    properties:
-      instructions:
-        description: >-
-          Long-text description of what should be done to get info in the
-          desired format using the other properties of this object.
-          Also explains what the association property should look like after
-          this post-processing
-        type: string  
-      responseFieldsUsed:
-        description: >-
-          dot-notation for the one or more fields in the API/JSON response
-          used
-        oneOf:  ## ALLOWS string (1 field) or array of strings (multiple)
-        - type: array
-          minItems: 1
-          items:
-            type: string
-        - type: string
-      ## OPTIONAL to add a mapping object here OR in a separate file
-      ## view is that we may use CODE only (call functions / service) to do
-      ##   the transformation
-      mapping:
-        description: >-
-          Object (Python dict-like). Keys are possible values from the response
-          fields (as string keys), values are info in the desired format.
-      mappingFile:
-        description: >-
-          github link to YAML file that maps possible values from the response
-          fields (as string keys) to info in the desired format
-        type: string    
-      ## If the API response sometimes doesn't include the field but you want to
-      ##   recognize this situation and map it to info, use the key "default" 
-      ## ?? are multiple fields ever used? Then mapping keys have to be combos of
-      ##    string values (a string, concatenated with ";")        
-      bteCode:
-        description: >-
-          github link to the code BTE uses to post-process API/JSON responses
-          (using the info in other properties of this object)
-        type: string     
-  transformUsingTemplate:
-    description: >-
-      Similar to transformResponseValues, but a string template with
-      replacement fields is used to describe the desired standard format
-    type: object
-    required:
-    - instructions
-    - template
-    - templateKeys
-    - bteCode 
-    additionalProperties: False
-    properties:
-      instructions:
-        description: >-
-          Long-text description of what should be done to get info in the
-          desired format using the other properties of this object.
-          Also explains what the association property should look like after
-          this post-processing
-        type: string   
-      template:
-        description: >-
-          One string template (Python string-formatting-like).
-          The keywords bracketed by curly brackets are replacement-fields
-          that point to what they should be replaced with (see templateKeys)
-        type: string   
-      templateKeys:
-        description: >-
-          Object (Python dict-like). Keys are the keywords in the template;
-          values are dot-notation for API/JSON response fields OR
-          variable names for query/input info. That data should be used to
-          replace the keywords in the template, creating one or more strings
-        type: object  
-        minProperties: 1
-        patternProperties:
-          .:
-            type: string      
-      bteCode:
-        description: >-
-          github link to the code BTE uses to post-process API/JSON responses
-          (using the info in other properties of this object)
-        type: string  
-  referenceObj:  
-    description: >- 
-      Used to provide publications and website URLs to users. Info may be
-      about an association, knowledge-source, measure, context/relevance, etc
-    type: object
-    additionalProperties: False
-    minProperties: 1
-    properties: 
-      publications:
-        type: object
-        minProperties: 1
-        patternProperties:
-        ## keys are ID namespace, all-lowercase. Add more as-needed
-          pmid|pmc|doi|biorixv|medrxiv:        
-            oneOf:  
-            ## similar to staticValue sub-schema, but also accepts numbers
-            ## use when the info is static / not dependent on API response
-            - type: object  
-              required:  
-              - value
-              additionalProperties: False
-              properties:
-                value: 
-                  oneOf:  
-                  - type: array
+              - description: >-
+                  For this operation, assign one Biolink predicate (from the
+                  biolink related_to hierarchy) that best describes the kind of
+                  relationship (associations) returned. This sub-schema is used
+                  when the API response does not give a predicate or the
+                  predicate is always the same value. Format is no prefix; all
+                  undercase; space replaced with underscore
+                ## currently no enum since it would be LONG
+                type: string
+              - description: >-
+                  A field in the API response provides a Biolink predicate
+                  (from the biolink related_to hierarchy) for EVERY association
+                  returned. The field value should be a string representing one
+                  predicate
+                type: object
+                required:
+                  - responseField
+                additionalProperties: False
+                properties:
+                  responseField: 
+                    description: Dot-notation of the API (JSON) field
+                    type: string
+                  expectedValues:  
+                    description: >-
+                      Array of the possible values of this field. The metaKG
+                      uses this metadata to list the predicates this operation
+                      can return. It is okay for this to be an incomplete list
+                      (when the metadata writer does not know all of the
+                      possible values)
+                    type: array
                     minItems: 1
                     items:
-                      type: [string, number]
-                  - type: [string, number]
-            ## usually use this for association references
-            - $ref: '#/definitions/takesOnResponseValue'
-            - $ref: '#/definitions/transformResponseValues' 
-      websites:  
-        oneOf:  
-        ## static for non-association references
-        - $ref: '#/definitions/staticValue'
-        ## usually use this for association references
-        - $ref: '#/definitions/transformUsingTemplate'    
-  ## PROVENANCE DATA OBJECTS
-  oneProvenanceList:
-    description: >-
-      Array of objects (Python list-of-dict-like). Lists the sources and
-      associated info (including how they create associations)
-    ## this is an unordered collection
-    type: array
-    minItems: 1
-    items:
-      $ref: '#/definitions/oneProvenanceUnit'        
-  oneProvenanceUnit:
-    type: object
-    required:
-    - name
-    - sourceType
-    additionalProperties: False
-  ##  only include other fields (method, sourceContext, sourceReferences, 
-  ##    descriptiveInfo) if the info will likely remain static 
-  ##  version only included if it would be possible to automatically update,
-  ##    otherwise I just left a comment        
-    properties:
-      name:
-        description: >-
-          Name of the source (KP API, knowledge-source, database, text
-          corpus, etc)
-        type: string
-      sourceType:
-        ## ?? later set enum (limited options)                    
-        description: >-
-          Type of the source (KP API, knowledge-source, database, text
-          corpus, etc). Current possible values include service,
-          knowledgebase, publications, text, clinical_database
-        type: string
-      version:        
-        description: >-
-          Source version (KP API, knowledge-source, database, text corpus, etc)
-        type: string
-      versionType:
-      ## ?? later set enum (limited options)
-      ##    use if-then to require this if version is present
-        description: >-
-          There are different formats for versioning. Current possible values
-          include date_last_updated, version_number, data_from_this_date,
-          latest_date_covered
-        type: string
-      method:
-        ## Ideally, very similar methods have the same values
-        ## Hard to make enum (many possible values)
-        ## Some sources won't have methods (publications). May not be able to 
-        ##  specify a method for others (ambiguous / missing info)
-        description: >-
-          Keyword noting what the source did to create associations from data
-          or knowledge. Current possible values include ingest, NLP,
-          manual_curation, shared_phenotype, shared_disease, shared_variant,
-          submission, orthology_mapping
-        type: string
-        ## manual_curation means people (aka curators) are trained to make
-        ##   these associations or the associations were REVIEWED by curators
-        ## submission means people made the associations but their work wasn't
-        ##   necessarily made or reviewed by curators
-      sourceReferences:
-      ## for publications/websites describing how associations were made
-      ## used to pick sourceType/method/sourceContext and write descriptiveInfo
-      ## static, doesn't depend on response
-        $ref: '#/definitions/referenceObj'  
-      descriptiveInfo:      
-        description: >-
-          Long-text description of what the source did to create associations.
-          Try to include enough detail that a reader would understand what
-          happened
-        type: string
-      sourceContext:
-      ## used when the source was species-specific, disease-specific, etc
-      ## associations from the source could still be widely applicable
-      ## static, doesn't depend on response
-        $ref: '#/definitions/contextObj'   
-## MEASURE-RELATED SUB-SCHEMAS
-## assumes a measure's values are in one API response field. So, schema is
-##   similar to takesOnResponseValue, with some additional fields
-## oneNumericMeasure and oneCategoricalMeasure build on generalMeasure
-  generalMeasure:  
-    type: object
-    required:
-    - name
-    - responseField
-    ## don't set additionalProperties to False, will mess with allOf later
-    properties:
-      name:
-        description: >-
-          Name of the measure (include the name of the resource that
-          calculated it)
-        type: string
-      ontologyTerm:
-        description: >-
-          Term from an ontology (ideally an OWL Class) that corresponds with
-          this measure. Format is prefix:ID
-        type: string
-      responseField:
-        description: >-
-          Dot-notation for the corresponding API response field 
-        type: string
-      missingValueMeaning:
-        description: >-
-          Short free-text explaining what a missing/NULL/NA value would mean
-        type: string
-      measureReferences:  
-      ## put publications/websites with more info on the measure here
-      ## static, doesn't depend on response
-        $ref: '#/definitions/referenceObj'     
-  oneNumericMeasure:
-  ## includes additional requirements, like direction.
-  ## can also give range and units
-    allOf:
-    - $ref: '#/definitions/generalMeasure'      
-    - type: object
-      required:
-      - directionMeaning
-      ## don't set additionalProperties to False, will mess with allOf
-      properties:
-        range:
-          ## do not set a range if a measure can take on any value 
-          description: >-
-            Object, Python dict-like. Defines an expected lower and/or upper
-            bound for values (minimum and maximum). Inclusive means the range
-            includes the boundary number; exclusive means the range does not.
-            If the actual lower-bound is negative-infinity and/or the actual
-            upper bound is positive-infinity, do not set a bound
-          type: object
-          not:  ## used to make 2 mins or 2 maxs not allowed
-          ## means that instance is invalid if...
-            anyOf:
-            - type: object
-              required: ## both mins are present
-              - minExclusive
-              - minInclusive 
-            - type: object
-              required: ## both maxs are present
-              - maxExclusive
-              - maxInclusive 
-          additionalProperties: False
-          minProperties: 1
-          properties:            
-            minExclusive: 
-              type: number
-            maxExclusive:
-              type: number
-            minInclusive:
-              type: number
-            maxInclusive:
-              type: number
-        directionMeaning:
-          description: >-
-            Object, Python dict-like. Each key is a direction (larger,
-            closer_to_zero, more_negative, etc.). Each value is what the
-            direction means (more_specific, more_evidence, more_confident,
-            more_consistent, more_probable, etc.). A developer may want to
-            explain multiple directions (e.g. when a value means something
-            different when closer to 0 vs. closer to the upper bound vs.
-            closer to the lower bound)
-          type: object
-          minProperties: 1
-          ## ?? later set enum (limited options)
-          patternProperties:
-            .:  
-              type: string                    
-        units: 
-        ## assume the same units for all instances of one measure 
-          description: Units for the measure values
-          type: string   
-  oneCategoricalMeasure:
-  ## includes additional requirements, like categories 
-  ##   (enumerates possible values)
-  ## may include direction info (if the possible values are ordered)
-    allOf:
-    - $ref: '#/definitions/generalMeasure'
-    - type: object
-      required:
-      - categories
-      ## don't set additionalProperties to False, will mess with allOf
-      properties:
-        categories:
-          description: >-
-            List of the possible values for the category, ordered if there
-            is an order to the values
-          type: array
-          minItems: 1
-          items:
-            type: string
-        directionMeaning:
-          description: >-
-            Object, Python dict-like. The key is the way to read the
-            categories above, forward or reverse. The value is what the
-            direction means (more_specific, more_evidence, more_confident,
-            more_consistent, more_probable, etc)
-          type: object
-          additionalProperties: False
-          minProperties: 1
-          patternProperties:
-            forward|reverse:
-              type: string  
-## CONTEXT DATA OBJECT
-## ?? consider using enumForMetaKG
-  contextObj:     
-    description: >-
-      Object, Python dict-like. Keys specify the type of context. Values
-      depend on where the information comes from. After post-processing, the
-      context should be ontology terms (curies) or short-strings.
-      Context/relevance is information that restricts the use or
-      interpretation of this association. This lets a developer know if the
-      operation or the associations retrieved are relevant to the question
-      being asked
-    type: object
-    additionalProperties: False
-    minProperties: 1
-    patternProperties:
-      ## cell line info counts as experimentalSpecific
-      taxonSpecific|diseaseSpecific|cohortSpecific|experimentalSpecific:
-        ## may be in the API response or may not
-        ## Choose a schema to handle the situation
-        oneOf:
-        - $ref: '#/definitions/staticValue'
-        - $ref: '#/definitions/takesOnResponseValue'
-        - $ref: '#/definitions/transformResponseValues'
+                      type: string
+                  containsPrefix:  ## @ is this needed?
+                  ## assuming values are all curies or all not (no mix)
+                    description: >-
+                      Whether the field value has a prefix or not. If
+                      this field is absent, assume False
+                    type: boolean 
+          id: 
+            oneOf:
+              - description: >-
+                  For this operation, assign one relation (OWL ObjectProperty)
+                  that best describes the kind of relationship (associations)
+                  returned. This sub-schema is used when the API response does
+                  not give a relation or the relation is always the same value.
+                  Format is prefix:ID (curie)
+                type: string
+              - description: >-
+                  A field in the API response provides a relation (OWL
+                  ObjectProperty) for EVERY association returned. The field
+                  value should be a string representing one relation in curie
+                  format (prefix:ID)                  
+                type: object
+                ## currently assuming curies so containsPrefix / prefixes
+                ##   (list what the prefixes are) aren't needed 
+                required:
+                  - responseField
+                additionalProperties: False
+                properties:
+                  responseField: 
+                    description: Dot-notation of the API (JSON) field
+                    type: string
+                  expectedValues:  
+                    description: >-
+                      Array of the possible values of this field. The metaKG
+                      uses this metadata to list the relations this operation
+                      can return. It is okay for this to be an incomplete list
+                      (when the metadata writer does not know all of the
+                      possible values)
+                    type: array
+                    minItems: 1
+                    items:
+                      type: string
+          label: 
+            oneOf:
+              - description: >-
+                  For this operation, one can assign the human-readable label
+                  for the relation in the id slot. This sub-schema can be used
+                  when the id uses the corresponding (type:string) sub-schema
+                type: string
+              - description: >-
+                  A field in the API response provides a human-readable label
+                  for the relation for EVERY association returned. The field
+                  value should be a string representing one label
+                type: object
+                ## currently assuming no prefix so containsPrefix / prefixes
+                ##   (list what the prefixes are) aren't needed 
+                required:
+                  - responseField
+                additionalProperties: False
+                properties:
+                  responseField: 
+                    description: Dot-notation of the API (JSON) field
+                    type: string
+                  expectedValues:  
+                    description: >-
+                      Array of the possible values of this field. The metaKG
+                      could use this field to list the relation labels this
+                      operation can return. It is okay for this to be an
+                      incomplete list (when the metadata writer does not know
+                      all of the possible values)
+                    type: array
+                    minItems: 1
+                    items:
+                      type: string   
+          negated:
+          ## @ new, assuming no operation returns only negated associations
+            description: >- 
+              Some operations may include negated associations, meaning the
+              specified relationship between A and B DOES NOT EXIST. In this
+              situation, APIs tend to provide a boolean-like field to specify
+              whether the association is negated or not
+            required:
+              - responseField
+              - negatedValue
+            additionalProperties: False
+              properties:
+                responseField: 
+                  description: Dot-notation of the API (JSON) field
+                  type: string
+                negatedValue:
+                  description: Value that means the association is negated
+                  type: [string, boolean]                  
+      references:
+      ## !! Kevin and I were discussing this when we stopped 1/20/21
+        description: >- 
+          Object (Python dict-like). Describes API (JSON) response fields that
+          provide publications related to associations and source webpages for
+          the association. Can also provide a template to generate source
+          webpage URLs
+        type: object
+        additionalProperties: False
+        minProperties: 1
+        properties:
+          websites:
+            description: >-
+              Use this sub-schema when the field values are website URLs. The
+              format is expected to be a single URL (string) or an array of
+              URLs (strings). If the field value is instead a string
+              representing a list, use the delimiter property
+            type: object
+            required:
+              - responseField
+            additionalProperties: False
+            properties:
+            ## currently assuming no prefix so containsPrefix not needed 
+              responseField: 
+                description: >-
+                  Dot-notation of the field in the API (JSON) response
+                type: string
+              delimiter:
+                description: >-
+                  Only use this key if the field value is a string representing
+                  a list of URLs. The value of this key is the delimiter
+                type: string
+          websiteTemplate:
+            description: >-
+              Used to describe how to generate source webpage URLs for the
+              association
+            type: object
+            required:
+              - instructions
+              - template
+              - templateKeys
+            additionalProperties: False
+            properties:
+              instructions:
+                description: >-
+                  Free-text field. Explains how to use the template
+                type: string   
+              template:
+                description: >-
+                  A string (Python string-formatting-like). The keywords
+                  surrounded by curly brackets are replacement-fields (the keys
+                  in templateKeys)
+                type: string   
+              templateKeys:
+                description: >-
+                  Object (Python dict-like). Keys are the replacement-fields in
+                  the template; values are dot-notation of a field in the API
+                  (JSON) response OR variable names used in inputsAndQueryInfo.
+                  Those values replace the template keywords, creating one or
+                  more URL strings
+                type: object
+                minProperties: 1
+                patternProperties:
+                  .:  ## no format for these
+                    type: string
+        patternProperties:
+        ## for references with one ID namespace
+        ## Kevin: this design means the namespaces have one unambiguous name
+          "^pmid$|^pmc$|^doi$|^biorixv$|^medrxiv$|^isbn$":
+            description: >-
+              Use this sub-schema when the field values are IDs in a specific
+              namespace; the key specifies the namespace. The field value is
+              expected to be a single ID (string, number) or an array of IDs.
+              If the field value is instead a string representing a list,
+              use the delimiter property
+            type: object
+            required:
+              - responseField
+            additionalProperties: False
+            properties:
+              responseField: 
+                description: >-
+                  Dot-notation of the field in the API (JSON) response
+                type: string
+              containsPrefix:
+              ## assuming values are all curies or all not (no mix) 
+                description: >-
+                  Whether the IDs have prefixes (are curies) or not. If this
+                  field is absent, assume False
+                type: boolean
+              delimiter:
+                description: >-
+                  Only use this key if the field value is a string representing
+                  a list of IDs. The value of this key is the delimiter
+                type: string
+      provenance:
+        description: >- 
+          Object (Python dict-like). Provides structured, static source info
+          for associations returned by the operation (AKA where and how they
+          were made). Also describes API (JSON) response fields that provide
+          this type of info
+        type: object
+        required:
+          - structured
+        properties:
+          structured:
+            description: >-
+              Array of objects (Python list-of-dict-like). Describes the static
+              source info that applies to ALL associations returned by this
+              operation. Each object represents one source
+            type: array
+            minItems: 1
+            items:
+              type: object
+              required:
+                - name
+                - sourceType
+              additionalProperties: False
+              ## only include version if it would be possible to automatically
+              ##   update (otherwise leave a comment)
+              ## only include other fields if they are stable / static  
+              properties:
+                name:
+                  description: Name of the source (API, knowledgebase, etc)    
+                  type: string
+                sourceType:  ## @ later set enum                   
+                  description: >-
+                    Type of the source. Possible values include service,
+                    knowledgebase, publications, text, clinical_database
+                  type: string              
+                version:
+                  type: string
+                versionType:
+                ## @ later set enum (limited options)
+                ## @ used because people may describe version for the same
+                ##   source differently...
+                  description: >-
+                    The format of the version. Possible values include
+                    date_last_updated, version_number, data_from_this_date,
+                    latest_date_covered
+                  type: string              
+                method:
+                ## simple keyword descriptors
+                ## many reasons why there wouldn't be a method value: doesn't
+                ##   have one (text corpus), couldn't find it / ambiguous,
+                ##   dynamic (depends on response, could be one of multiple
+                ##   values)
+                ## @ edit this description as you add values
+                  description: >-
+                    Keyword describing what the source did to create
+                    associations from data or knowledge. Possible values
+                    include ingest, NLP, shared_gene_annot
+                  type: string
+                references:
+                  description: >-
+                    Provides publications and webpages describing where and how
+                    associations were made
+                  type: object
+                  additionalProperties: false
+                  minProperties: 1
+                  properties:
+                    websites:  ## one or more URLs (strings)
+                      type: [string, array]
+                  patternProperties:
+                    "^pmid$|^pmc$|^doi$|^biorixv$|^medrxiv$|^isbn$":
+                      description: >-
+                        The key specifies the namespace. The value is a single
+                        ID (string, number) or an array of IDs
+                      type: [string, number, array]
+                descriptiveInfo:      
+                  description: >-
+                    Free-text description of what the source did to create
+                    associations (remember to only include stable info)
+                  type: string
+          dynamic:
+            description: >-
+              Array of objects (Python list-of-dict-like). Describes the
+              dynamic source info from one or more API (JSON) response fields.
+              A field value is expected to a string (representing one thing) or
+              an array of strings (multiple things). If the field value is
+              instead a string representing a list, use the delimiter property
+            type: array
+            minItems: 1
+            items:
+              type: object
+              required:
+                - responseField
+                - provenanceType
+              additionalProperties: False
+              properties:
+                responseField: 
+                  description: >-
+                    Dot-notation of the field in the API (JSON) response
+                  type: string
+                provenanceType:
+                  description: >-
+                    Keyword describing what kind of info the field provides 
+                  type: string
+                  ## @ add if more things seem useful. currently related to
+                  ##   the structured fields...
+                  enum:
+                    - sourceNames
+                    ## how associations were made from data or knowledge
+                    - methods
+                expectedValues:  
+                  description: >-
+                    Array of the possible values of this field. It is okay for
+                    this to be an incomplete list (when the metadata writer
+                    does not know all of the possible values)
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string                  
+                delimiter:
+                  description: >-
+                    Only use this key if the field value is a string
+                    representing a list of things. The value of this key is
+                    the delimiter
+                  type: string
+                
+
+      ## WIP: still have the measures and context left
+      ##   watch for multi-value categorical, contextRelevance prefixes/containsPrefixes
+      
+## this is 79 char long #######################################################          

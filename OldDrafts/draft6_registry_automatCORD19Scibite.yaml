@@ -1,0 +1,218 @@
+## example of using the x-bte-association-retrieval schema 
+##   to write registry entries for querying Automat CORD19 Scibite API
+##   (current registry's 6 operations)
+## notes about this specific registry entry: 
+## - some API/JSON-response fields weren't used 
+## - API has a lot of operations that aren't described here
+## - response fields here come from BTE "pre-processed" API response. See 
+##   https://github.com/biothings/biothings_explorer/blob/master/
+##   biothings_explorer/api_preprocess/scibite.py
+## - used raw API response examples and predicate endpoint to decide that
+##   predicateInfo is static and can be modeled with staticValue sub-schema.
+##   See https://automat.renci.org/cord19-scibite/predicates
+
+## notes for developers:
+## - this registry file is related to other files: BTE code. 
+## this is 79 char long #######################################################
+
+## notes for CX:
+## - change pre-processing to allow more fields from the association 
+##   (enrichment_p, num_publications). See raw API response example:
+##   https://automat.renci.org/cord19-scibite/gene/chemical_substance/
+##   NCBIGene:1803    
+## - queryInfo/parameters is different format for operations 3-6 compared to
+##   gene-input operations 1-2. keep or change this? See
+##   https://github.com/NCATS-Tangerine/translator-api-registry/blob/master/
+##   scibite/smartapi.yml
+    
+## questions for RENCI:
+## - the raw API/JSON-response has a publications field, but I always see an
+##   empty array...
+## - are CHEMBL.COMPOUND and DOID still used for node main IDs? 
+## - operations return associations with the inverse-relationship as well...
+##   (ex: gene2disease returns disease -> gene associations as well)
+## - what is enrichment_p, num_publications, ctime? 
+## - check provenance
+
+components:      
+  x-bte-association-retrieval:  
+    gene2chemical:  ## 1
+      inputsAndQueryInfo:  ## required
+      - id: NCBIGene
+        semantic: Gene
+        requiresPrefix: true
+        queryInfo:  
+          ## assume supportBatch is false
+          parameters:
+            geneid: "NCBIGene:{inputs[0]}"
+      outputs:   ## required
+      - id: CHEBI
+        semantic: ChemicalSubstance
+        ## based on pre-processing 
+        containsPrefix: true
+        responseField: "associated_with.chebi"
+      - id: CHEMBL.COMPOUND
+        semantic: ChemicalSubstance  
+        ## based on pre-processing, no prefix in output IDs
+        responseField: "associated_with.chembl"        
+      predicateInfo:  ## biolink / id use the staticValue sub-schema
+        biolink:   
+          value: "related_to"
+        id:   
+          value: "SEMMEDDB:ASSOCIATED_WITH" 
+      provenance:  
+        $ref: '#/definitions/automatProvenance'
+    gene2disease:  ## 2
+      inputsAndQueryInfo:  
+      - id: NCBIGene
+        semantic: Gene
+        requiresPrefix: true
+        queryInfo:  
+          ## assume supportBatch is false
+          parameters:
+            geneid: "NCBIGene:{inputs[0]}"
+      outputs:   
+      - id: MONDO
+        semantic: Disease 
+        ## based on pre-processing 
+        containsPrefix: true
+        responseField: "associated_with.mondo"
+      - id: DOID
+        semantic: Disease 
+        ## based on pre-processing 
+        containsPrefix: true
+        responseField: "associated_with.doid"        
+      predicateInfo:  ## biolink / id use the staticValue sub-schema
+        biolink:   
+          value: "related_to"
+        id:   
+          value: "SEMMEDDB:ASSOCIATED_WITH" 
+      provenance:  
+        $ref: '#/definitions/automatProvenance' 
+    chemical2gene:  ## 3
+      inputsAndQueryInfo:  
+      - id: CHEBI
+        semantic: ChemicalSubstance
+        requiresPrefix: true
+        queryInfo:  
+          ## assume supportBatch is false
+          parameters:  
+            chebi: "{inputs[0]}"
+      outputs:   
+      - id: NCBIGene
+        semantic: Gene  
+        ## based on pre-processing, no prefix in output IDs
+        responseField: "associated_with.ncbigene"
+      predicateInfo:  ## biolink / id use the staticValue sub-schema
+        biolink:   
+          value: "related_to"
+        id:   
+          value: "SEMMEDDB:ASSOCIATED_WITH" 
+      provenance:  
+        $ref: '#/definitions/automatProvenance'
+    chemical2disease:  ## 4
+      inputsAndQueryInfo:  
+      - id: CHEBI
+        semantic: ChemicalSubstance
+        requiresPrefix: true
+        queryInfo:  
+          ## assume supportBatch is false
+          parameters: 
+            chebi: "{inputs[0]}"
+      outputs:   
+      - id: MONDO
+        semantic: Disease 
+        ## based on pre-processing 
+        containsPrefix: true
+        responseField: "associated_with.mondo"
+      - id: DOID
+        semantic: Disease 
+        ## based on pre-processing 
+        containsPrefix: true
+        responseField: "associated_with.doid"        
+      predicateInfo:  ## biolink / id use the staticValue sub-schema
+        biolink:   
+          value: "related_to"
+        id:   
+          value: "SEMMEDDB:ASSOCIATED_WITH" 
+      provenance:  
+        $ref: '#/definitions/automatProvenance'   
+    disease2gene:  ## 5
+      inputsAndQueryInfo: 
+      - id: MONDO
+        semantic: Disease
+        requiresPrefix: true
+        queryInfo:  
+          ## assume supportBatch is false
+          parameters:   
+            mondo: "{inputs[0]}"   
+      outputs:   
+      - id: NCBIGene
+        semantic: Gene  
+        ## based on pre-processing, no prefix in output IDs
+        responseField: "associated_with.ncbigene"
+      predicateInfo:  ## biolink / id use the staticValue sub-schema
+        biolink:   
+          value: "related_to"
+        id:   
+          value: "SEMMEDDB:ASSOCIATED_WITH" 
+      provenance: 
+        $ref: '#/definitions/automatProvenance'
+    disease2chemical:    ## 6
+      inputsAndQueryInfo:  
+      - id: MONDO
+        semantic: Disease
+        requiresPrefix: true
+        queryInfo:  
+          ## assume supportBatch is false
+          parameters:  
+            mondo: "{inputs[0]}"  
+      outputs:   ## required
+      - id: CHEBI
+        semantic: ChemicalSubstance
+        ## based on pre-processing 
+        containsPrefix: true
+        responseField: "associated_with.chebi"
+      - id: CHEMBL.COMPOUND
+        semantic: ChemicalSubstance  
+        ## based on pre-processing, no prefix in output IDs
+        responseField: "associated_with.chembl"        
+      predicateInfo:  ## biolink / id use the staticValue sub-schema
+        biolink:   
+          value: "related_to"
+        id:   
+          value: "SEMMEDDB:ASSOCIATED_WITH" 
+      provenance:  
+        $ref: '#/definitions/automatProvenance' 
+## this is 79 char long #######################################################  
+definitions:
+  automatProvenance:
+  - name: "Automat CORD19 Scibite API"
+    sourceType: service
+    version: "v2"
+    versionType: "version_number"
+    method: NLP
+    ## comes from reading https://tarheelstogether.unc.edu/robokop-technology
+    ## -offers-faster-easier-exploration-of-emerging-covid-19-research/
+    descriptiveInfo: >- 
+      Downloaded the Neo4J dump of the Automat CORD19 Scibite Neo4J
+      knowledgebase. The knowledgebase associations represent frequent
+      co-occurrence of the biomedical entities in the CORD19 publications.
+      Scibite NLP was used for entity resolution
+  - name: "CORD19 Dataset"
+    sourceType: publications
+    ## Automat doesn't give version info for this
+    ## no method; it's a text source
+    sourceReferences:    ## uses staticValue sub-schema
+      websites:   
+        value: "https://www.semanticscholar.org/cord19/"
+    descriptiveInfo: >- 
+      Provides COVID-19 and coronavirus-related research articles (and
+      standardized article metadata). Publications come from Pubmed (PMC open
+      access corpus), WHO (a corpus maintained by them), bioRxiv, and medRxiv
+      pre-prints
+    sourceContext:    ## doesn't restrict use of the associations
+      diseaseSpecific:    ## uses staticValue sub-schema
+        value:
+        - "MONDO:0020753"  ## coronavirus infection
+        - "MONDO:0100096"  ## COVID-19     

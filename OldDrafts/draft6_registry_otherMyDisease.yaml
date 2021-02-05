@@ -1,0 +1,749 @@
+## example of using the x-bte-association-retrieval schema 
+##   to write registry entries for querying MyDisease.info API 
+##   (operations that aren't based on disgenet data)
+## notes about this specific registry entry: 
+## - this json has "$ref" that need to be expanded in use.
+##   Python has the library jsonref that can be used for this. 
+## this is 79 char long #######################################################
+
+## WIP (currently working on reverse CTD operations)
+
+## CX notes:  
+## @@ HPOA operations (see notes) 
+##    current parser url: https://github.com/biothings/mydisease.info/blob/master/src/plugins/hpo/parser.py#L44
+## - see earlier note Q (covid_phenotypes only has COVID-19 disease in it; how to describe this kind of input restriction?) 
+## - small note: currently no operation for DECIPHER Disease IDs (current 2020-12 data has 47). do we want to recognize those? example of a query: leave fields blank, request body: q: "81", scopes: "hpo.decipher". 
+
+## @@ CTD operations
+## - can this metadata format / parsing code handle non-rectangular data? (aka not all records have hpoa onset, frequency, sex info) Does this need to be marked in the metadata or...?
+## - for disease-chemical operations: could do more complicated mapping for predicates/provenance if I use the direct_evidence field. the issue is that this field is not present at all in most records. I'm not sure what to do. maybe have a "default" key for the records where the field is missing? so 3 keys, default, marker/mechanism, therapeutic
+## - and is there an issue with the parser? since the only results I'm seeing is like a chunk of the end of the original file (the end of Z chemical names). see example links and https://github.com/biothings/mydisease.info/blob/master/src/plugins/ctd/parser.py
+## - issue with disease-pathway operations: input is MESH or OMIM Disease, output is REACT or KEGG Pathway. currently setting up two operations, one for each input ID. Then have two outputs described for each 
+## - added operations for omim diseases in CTD data
+## - couldn't find disease-bp operations at all: replacing bp with pathway instead 
+
+## ?? can leave this thought for later: disease-chemical (inferred associations) and disease-pathway (all since all inferred) use triangulation with genes and specify them (inference_gene_symbol field). However, there currently isn't a standard way to deal with this. related to https://github.com/biolink/biolink-model/issues/566
+
+components:      
+  x-bte-association-retrieval:  
+    disease-phenotype1:  ## name for this particular operation
+    ## raw API/JSON-response example used to help write this:
+    ## go to http://mydisease.info/#/query/post_query. Set...
+    ##   fields: hpo.phenotype_related_to_disease, request body: "q": "246900",
+    ##   "scopes": "hpo.omim"
+    ## Execute this query and see the results
+      queryInfo:  ## required
+        supportBatch: true
+        inputSeparator: ","
+        parameters:
+          fields: "hpo.phenotype_related_to_disease"
+        requestBody:
+          body:     
+            q: "{inputs[0]}"
+            scopes: "hpo.omim"  
+          header: "application/x-www-form-urlencoded"
+      inputs:  ## required
+      - id: OMIM
+        semantic: Disease
+        requiresPrefix: false
+      outputs:   ## required
+      - id: HP
+        semantic: PhenotypicFeature  
+        containsPrefix: true
+        responseField: "hpo.phenotype_related_to_disease.hpo_id"
+      predicateInfo:      
+      ## biolink / id / label are static and set here in the registry, so
+      ##   the staticValue schema is used. 
+      ## see the schema for other possible situations 
+      ## ?? see written notes. currently assuming we are using only aspect="P" annotations     
+        biolink:
+          value: "has_phenotype"
+        id:   ## child of has_phenotype in RO
+          value: "RO:0002452"
+        label:
+          value: "RO:has_symptom"
+      references:    
+      ## ?? see written notes. data has actual webpage/publication info in Reference column
+      ##     but with its current formatting, it doesn't fit this model (also hard to parse)
+        websites:    ## uses the transformUsingTemplate schema
+        ## see the schema for other possible situations
+          instructions: >-
+            Create an array of one or more strings using the template. There
+            should be a separate URL for each disease ID. Result should be a key
+            (websites) with a value (the array of string website URLs)
+          ## example: https://hpo.jax.org/app/browse/disease/OMIM:246900 
+          template:
+            "https://hpo.jax.org/app/browse/disease/OMIM:{disease}"
+          templateKeys:  ## keywords in template
+            disease: "inputs[0]"
+            ## the OMIM Disease IDs (no prefix), used as input to the query
+            ## should be an array of one or more strings 
+          bteCode: ""  
+          ## github link to the code that uses this info to process response   
+      provenance:  ## uses the oneProvenanceList schema
+        "$ref": "#/definitions/hpoProvenanceList"
+      categoryVariables: 
+        "$ref": "#/definitions/hpoCategoricalVars"
+    disease-phenotype2:  ## name for this particular operation
+    ## raw API/JSON-response example used to help write this:
+    ## go to http://mydisease.info/#/query/post_query. Set...
+    ##   fields: hpo.phenotype_related_to_disease, request body: "q": "881",
+    ##   "scopes": "hpo.orphanet"
+    ## Execute this query and see the results
+      queryInfo:  
+        supportBatch: true
+        inputSeparator: ","
+        parameters:
+          fields: "hpo.phenotype_related_to_disease"
+        requestBody:
+          body:     
+            q: "{inputs[0]}"
+            scopes: "hpo.orphanet"
+          header: "application/x-www-form-urlencoded"
+      inputs:  
+      - id: ORPHANET
+        semantic: Disease
+        requiresPrefix: false
+      outputs:   
+      - id: HP
+        semantic: PhenotypicFeature  
+        containsPrefix: true
+        responseField: "hpo.phenotype_related_to_disease.hpo_id"
+      predicateInfo:   ## using staticValue schema
+        biolink:
+          value: "has_phenotype"
+        id:   ## child of has_phenotype in RO
+          value: "RO:0002452"
+        label:
+          value: "RO:has_symptom"
+      references:    
+        websites:    ## uses the transformUsingTemplate schema
+        ## see the schema for other possible situations
+          instructions: >-
+            Create an array of one or more strings using the template. There
+            should be a separate URL for each disease ID. Result should be a key
+            (websites) with a value (the array of string website URLs)
+          ## example: https://hpo.jax.org/app/browse/disease/ORPHA:881
+          template:
+            "https://hpo.jax.org/app/browse/disease/ORPHA:{disease}"
+          templateKeys:  ## keywords in template
+            disease: "inputs[0]"
+            ## the ORPHANET Disease IDs (no prefix), used as input to the query
+            ## should be an array of one or more strings 
+          bteCode: ""  
+          ## github link to the code that uses this info to process response   
+      provenance:  ## uses the oneProvenanceList schema
+        "$ref": "#/definitions/hpoProvenanceList"
+      categoryVariables: 
+        "$ref": "#/definitions/hpoCategoricalVars"   
+    disease-phenotype3:  ## name for this particular operation
+    ## raw API/JSON-response example used to help write this:
+    ## go to http://mydisease.info/#/query/post_query. Set...
+    ##   fields: covid_phenotypes.hp, request body: "q": "MONDO:0100096",
+    ##   "scopes": "mondo.mondo"
+    ## Execute this query and see the results
+      queryInfo:  
+        supportBatch: true
+        inputSeparator: ","
+        parameters:
+          fields: "covid_phenotypes.hp"
+        requestBody:
+          body:     
+            q: "{inputs[0]}"
+            scopes: "mondo.mondo"
+          header: "application/x-www-form-urlencoded"
+      inputs:  
+      - id: MONDO
+        semantic: Disease
+        requiresPrefix: true
+      outputs:   
+      - id: HP
+        semantic: PhenotypicFeature  
+        containsPrefix: true
+        responseField: "covid_phenotypes.hp"        
+      predicateInfo:   ## using staticValue schema
+        biolink:
+          value: "has_phenotype"
+        id:   ## child of has_phenotype in RO
+          value: "RO:0002452"
+        label:
+          value: "RO:has_symptom"        
+      provenance:  ## uses the oneProvenanceList schema
+      - name: "MyDisease.info API"
+        sourceType: service
+        version: "2020-10-26"
+        versionType: "date_last_updated"
+        method: manual_curation
+        ## ?? not sure how this was made, ask Kevin
+        descriptiveInfo: >- 
+          Uses a manually curated list of HPO terms describing symptoms
+          of COVID-19 (list from 2020-08-26)
+    phenotype-disease1:  ## name for this particular operation
+    ## raw API/JSON-response example used to help write this:
+    ## go to http://mydisease.info/#/query/post_query. Set...
+    ##   fields: mondo.xrefs.omim, size=250, request body: "q": "HP:0000224",
+    ##   "scopes": "hpo.phenotype_related_to_disease.hpo_id"
+    ## Execute this query and see the results
+      queryInfo:  
+        supportBatch: true
+        inputSeparator: ","
+        path: "/query"
+        method: "post"
+        parameters:
+          fields: "mondo.xrefs.omim"
+          size: "250"
+        requestBody:
+          body:
+            q: "{inputs[0]}"
+            scopes: "hpo.phenotype_related_to_disease.hpo_id"
+          header: "application/x-www-form-urlencoded"
+      inputs:  
+      - id: HP
+        semantic: PhenotypicFeature
+        requiresPrefix: true
+      outputs:   
+      - id: OMIM
+        semantic: Disease  
+        containsPrefix: false
+        responseField: "mondo.xrefs.omim"
+        ## note that responseField gives a one-string array 
+      predicateInfo:   ## using staticValue schema
+        biolink:
+          value: "has_phenotype"
+        id:   ## child of has_phenotype in RO
+          value: "RO:0002452"
+        label:
+          value: "RO:has_symptom"
+      ## while we currently can't get publications, we can send users to 
+      ##   the source webpage for more info...
+      references:    
+        "$ref": "#/definitions/hpoTermReferences"      
+      provenance:  ## uses the oneProvenanceList schema
+        "$ref": "#/definitions/hpoProvenanceList"      
+    phenotype-disease2:  ## name for this particular operation
+    ## raw API/JSON-response example used to help write this:
+    ## go to http://mydisease.info/#/query/post_query. Set...
+    ##   fields: mondo.xrefs.orphanet, size=250, request body: "q": "HP:0000224",
+    ##   "scopes": "hpo.phenotype_related_to_disease.hpo_id"
+    ## Execute this query and see the results
+      queryInfo:  
+        supportBatch: true
+        inputSeparator: ","
+        path: "/query"
+        method: "post"
+        parameters:
+          fields: "mondo.xrefs.orphanet"
+          size: "250"
+        requestBody:
+          body:
+            q: "{inputs[0]}"
+            scopes: "hpo.phenotype_related_to_disease.hpo_id"
+          header: "application/x-www-form-urlencoded"
+      inputs:  
+      - id: HP
+        semantic: PhenotypicFeature
+        requiresPrefix: true
+      outputs:   
+      - id: ORPHANET
+        semantic: Disease  
+        containsPrefix: false
+        responseField: "mondo.xrefs.orphanet"
+        ## note that responseField gives a one-string array 
+      predicateInfo:   ## using staticValue schema
+        biolink:
+          value: "has_phenotype"
+        id:   ## child of has_phenotype in RO
+          value: "RO:0002452"
+        label:
+          value: "RO:has_symptom"
+      ## while we currently can't get publications, we can send users to 
+      ##   the source webpage for more info...
+      references:    
+        "$ref": "#/definitions/hpoTermReferences"      
+      provenance:  ## uses the oneProvenanceList schema
+        "$ref": "#/definitions/hpoProvenanceList"   
+    phenotype-disease3:  ## name for this particular operation
+    ## raw API/JSON-response example used to help write this:
+    ## go to http://mydisease.info/#/query/post_query. Set...
+    ##   fields: mondo.mondo, request body: "q": "HP:0000224",
+    ##   "scopes": "covid_phenotypes.hp"
+    ## Execute this query and see the results
+      queryInfo:  
+        supportBatch: true
+        inputSeparator: ","
+        parameters:
+          fields: "mondo.mondo"
+        requestBody:
+          body:     
+            q: "{inputs[0]}"
+            scopes: "covid_phenotypes.hp"
+          header: "application/x-www-form-urlencoded"
+      inputs:  
+      - id: HP
+        semantic: PhenotypicFeature
+        requiresPrefix: true
+      outputs:   
+      - id: MONDO
+        semantic: Disease   
+        containsPrefix: true
+        responseField: "mondo.mondo"        
+      predicateInfo:   ## using staticValue schema
+        biolink:
+          value: "has_phenotype"
+        id:   ## child of has_phenotype in RO
+          value: "RO:0002452"
+        label:
+          value: "RO:has_symptom"        
+      provenance:  ## uses the oneProvenanceList schema
+      - name: "MyDisease.info API"
+        sourceType: service
+        version: "2020-10-26"
+        versionType: "date_last_updated"
+        method: manual_curation
+        ## ?? not sure how this was made, ask Kevin
+        descriptiveInfo: >- 
+          Uses a manually curated list of HPO terms describing symptoms
+          of COVID-19 (list from 2020-08-26)
+    disease-chemical1:  ## name for this particular operation
+    ## raw API/JSON-response example used to help write this:
+    ## go to http://mydisease.info/#/query/post_query. Set...
+    ##   fields: ctd.chemical_related_to_disease, request body: "q": "D009102",
+    ##   "scopes": "mondo.xrefs.mesh, disgenet.xrefs.mesh"
+    ## Execute this query and see the results
+      queryInfo:  
+        supportBatch: true
+        inputSeparator: ","
+        path: "/query"
+        method: "post"
+        parameters:  ## ?? set size since this could return a lot of results?
+          fields: "ctd.chemical_related_to_disease"
+        requestBody:
+          body:
+            q: "{inputs[0]}"
+            scopes: "mondo.xrefs.mesh, disgenet.xrefs.mesh"
+          header: "application/x-www-form-urlencoded"
+      inputs:  
+      - id: MESH
+        semantic: Disease
+        requiresPrefix: false
+      outputs:   
+      - id: MESH
+        semantic: ChemicalSubstance   
+        containsPrefix: false
+        responseField: "ctd.chemical_related_to_disease.mesh_chemical_id"
+      predicateInfo:  
+      ## biolink / id / label are static and set here in the registry, so
+      ##   the staticValue schema is used. 
+      ## see the schema for other possible situations 
+        biolink:  
+          responseField: direct_evidence
+          instructions:
+          bteCode:
+        id:  ## transformResponseField sub-schema
+          responseField: direct_evidence
+          enumsForMetaKG:
+          - "SIO:001403"
+          - "RO:438289"
+          - "RO:33433"
+        label: 
+          value: "SIO:is_associated_with"
+      references:
+        publications:
+          pmid:   ## value will be string or array of strings
+            responseField: "ctd.chemical_related_to_disease.pubmed"
+        websites:    ## uses the transformUsingTemplate schema
+        ## see the schema for other possible situations
+          instructions: >-
+            Create an array of one or more strings using the template. There
+            should be a separate URL for each disease ID. Each association
+            should have one chemical ID. Result should be a key (websites)
+            with a value (the array of string website URLs)
+          ## example: http://ctdbase.org/detail.go?type=relationship&chemAcc=D015054&diseaseAcc=MESH:D009102
+          ## this should be parsed as one string with no spaces
+          template: "http://ctdbase.org/detail.go?type=relationship&\
+                     chemAcc={chemID}&diseaseAcc=MESH:{diseaseID}"
+          templateKeys:  ## keywords in template
+            chemID: "ctd.chemical_related_to_disease.mesh_chemical_id"            
+            diseaseID: "inputs[0]"
+            ## the MESH Disease IDs (no prefix), used as input to the query
+            ## should be an array of one or more strings 
+          bteCode: ""  
+          ## github link to the code that uses this info to process response        
+      provenance:  ## uses the oneProvenanceList schema
+        "$ref": "#/definitions/ctdCDProvenanceList"  
+      numericMeasures:
+        "$ref": "#/definitions/ctdCDNumericVars"  
+      categoricalMeasures:
+        "$ref": "#/definitions/ctdCDCategoricalVars"  
+    ## ?? see CX notes above. making another operation for OMIM Disease IDs
+    disease-chemical2:  ## name for this particular operation
+    ## raw API/JSON-response example used to help write this:
+    ## go to http://mydisease.info/#/query/post_query. Set...
+    ##   fields: ctd.chemical_related_to_disease, request body: "q": "212138",
+    ##   "scopes": "mondo.xrefs.omim, disgenet.xrefs.omim"
+    ## Execute this query and see the results
+      queryInfo:  
+        supportBatch: true
+        inputSeparator: ","
+        path: "/query"
+        method: "post"
+        parameters:  ## ?? set size since this could return a lot of results?
+          fields: "ctd.chemical_related_to_disease"
+        requestBody:
+          body:
+            q: "{inputs[0]}"  
+            ## ?? check with Kevin that this scope is fine
+            scopes: "mondo.xrefs.omim, disgenet.xrefs.omim"
+          header: "application/x-www-form-urlencoded"
+      inputs:  
+      - id: OMIM
+        semantic: Disease
+        requiresPrefix: false
+      outputs:   
+      - id: MESH
+        semantic: ChemicalSubstance   
+        containsPrefix: false
+        responseField: "ctd.chemical_related_to_disease.mesh_chemical_id"
+      predicateInfo:  
+      ## biolink / id / label are static and set here in the registry, so
+      ##   the staticValue schema is used. 
+      ## see the schema for other possible situations 
+        biolink:  
+          value: "related_to"  
+        id:  
+          value: "SIO:001403" 
+        label: 
+          value: "SIO:is_associated_with"
+      references:
+        publications:
+          pmid:   ## value will be string or array of strings
+            responseField: "ctd.chemical_related_to_disease.pubmed"
+        websites:    ## uses the transformUsingTemplate schema
+        ## see the schema for other possible situations
+          instructions: >-
+            Create an array of one or more strings using the template. There
+            should be a separate URL for each disease ID. Each association
+            should have one chemical ID. Result should be a key (websites)
+            with a value (the array of string website URLs)
+          ## example: http://ctdbase.org/detail.go?type=relationship&chemAcc=D000077211&diseaseAcc=OMIM:212138
+          ## this should be parsed as one string with no spaces
+          template: "http://ctdbase.org/detail.go?type=relationship&\
+                     chemAcc={chemID}&diseaseAcc=OMIM:{diseaseID}"
+          templateKeys:  ## keywords in template
+            chemID: "ctd.chemical_related_to_disease.mesh_chemical_id"            
+            diseaseID: "inputs[0]"
+            ## the OMIM Disease IDs (no prefix), used as input to the query
+            ## should be an array of one or more strings 
+          bteCode: ""  
+          ## github link to the code that uses this info to process response        
+      provenance:  ## uses the oneProvenanceList schema
+        "$ref": "#/definitions/ctdCDProvenanceList"  
+      numericMeasures:
+        "$ref": "#/definitions/ctdCDNumericVars"  
+      categoricalMeasures:
+        "$ref": "#/definitions/ctdCDCategoricalVars"  
+    ## ?? see CX notes above. doing pathway (can find) rather than bp (can't find those operations)    
+    disease-pathway1:  ## name for this particular operation 
+    ## raw API/JSON-response example used to help write this:
+    ## go to http://mydisease.info/#/query/post_query. Set...
+    ##   fields: ctd.pathway_related_to_disease, request body: "q": "D009102",
+    ##   "scopes": "mondo.xrefs.mesh, disgenet.xrefs.mesh"
+    ## Execute this query and see the results
+
+      inputs:  
+      - id: MESH
+        semantic: Disease
+        requiresPrefix: false
+        queryInfo:  
+          supportBatch: true
+          inputSeparator: ","
+          path: "/query"
+          method: "post"
+          parameters:  
+          ## ?? set size since this could return a lot of results?
+            fields: "ctd.pathway_related_to_disease"
+          requestBody:
+            body:
+              q: "{inputs[0]}"
+              scopes: "mondo.xrefs.mesh, disgenet.xrefs.mesh"
+            header: "application/x-www-form-urlencoded"        
+        
+        
+        
+        
+      outputs:   ## ?? ask Kevin if having two outputs like this works
+      - id: REACT
+        semantic: Pathway   
+        responseField: "ctd.chemical_related_to_disease.react_pathway_id"
+      - id: KEGG
+        semantic: Pathway   
+        responseField: "ctd.chemical_related_to_disease.kegg_pathway_id"
+      predicateInfo:  
+      ## biolink / id / label are static and set here in the registry, so
+      ##   the staticValue schema is used. 
+      ## see the schema for other possible situations 
+        biolink:  
+          value: "related_to"  
+        id:  
+          value: "SIO:001403" 
+        label: 
+          value: "SIO:is_associated_with"
+      references:
+        websites:    ## uses the transformUsingTemplate schema
+        ## see the schema for other possible situations
+          instructions: >-
+            Create an array of one or more strings using the template. There
+            should be a separate URL for each disease ID. Result should be a
+            key (websites) with a value (the array of string website URLs)
+          ## using a more general website (not specific for the output pathway)
+          ## example: http://ctdbase.org/detail.go?type=disease&acc=MESH:D009102&view=pathway
+          ## this should be parsed as one string with no spaces
+          template: "http://ctdbase.org/detail.go?type=disease&acc=MESH:{diseaseID}&view=pathway"
+          templateKeys:  ## keywords in template
+            diseaseID: "inputs[0]"
+            ## the MESH Disease IDs (no prefix), used as input to the query
+            ## should be an array of one or more strings 
+          bteCode: ""  
+          ## github link to the code that uses this info to process response                 
+      provenance:  ## uses the oneProvenanceList schema
+        "$ref": "#/definitions/ctdCPathProvenanceList"           
+    disease-pathway2:  ## name for this particular operation 
+    ## raw API/JSON-response example used to help write this:
+    ## go to http://mydisease.info/#/query/post_query. Set...
+    ##   fields: ctd.pathway_related_to_disease, request body: "q": "212138",
+    ##   "scopes": "mondo.xrefs.omim, disgenet.xrefs.omim"
+    ## Execute this query and see the results
+      queryInfo:  
+        supportBatch: true
+        inputSeparator: ","
+        path: "/query"
+        method: "post"
+        parameters:  
+        ## ?? set size since this could return a lot of results?
+          fields: "ctd.pathway_related_to_disease"
+        requestBody:
+          body:
+            q: "{inputs[0]}"
+            scopes: "mondo.xrefs.omim, disgenet.xrefs.omim"
+          header: "application/x-www-form-urlencoded"
+      inputs:  
+      - id: OMIM
+        semantic: Disease
+        requiresPrefix: false
+      outputs:   ## ?? ask Kevin if having two outputs like this works
+      - id: REACT
+        semantic: Pathway   
+        containsPrefix: false
+        responseField: "ctd.chemical_related_to_disease.react_pathway_id"
+      - id: KEGG
+        semantic: Pathway   
+        containsPrefix: false
+        responseField: "ctd.chemical_related_to_disease.kegg_pathway_id"
+      predicateInfo:  
+      ## biolink / id / label are static and set here in the registry, so
+      ##   the staticValue schema is used. 
+      ## see the schema for other possible situations 
+        biolink:  
+          value: "related_to"  
+        id:  
+          value: "SIO:001403" 
+        label: 
+          value: "SIO:is_associated_with"
+      references:
+        websites:    ## uses the transformUsingTemplate schema
+        ## see the schema for other possible situations
+          instructions: >-
+            Create an array of one or more strings using the template. There
+            should be a separate URL for each disease ID. Result should be a
+            key (websites) with a value (the array of string website URLs)
+          ## using a more general website (not specific for the output pathway)
+          ## example: http://ctdbase.org/detail.go?type=disease&acc=OMIM:212138&view=pathway
+          ## this should be parsed as one string with no spaces
+          template: "http://ctdbase.org/detail.go?type=disease&acc=OMIM:{diseaseID}&view=pathway"
+          templateKeys:  ## keywords in template
+            diseaseID: "inputs[0]"
+            ## the OMIM Disease IDs (no prefix), used as input to the query
+            ## should be an array of one or more strings 
+          bteCode: ""  
+          ## github link to the code that uses this info to process response                 
+      provenance:  ## uses the oneProvenanceList schema
+        "$ref": "#/definitions/ctdCPathProvenanceList"               
+          
+
+## this is 79 char long #######################################################
+definitions:
+  hpoProvenanceList:
+  - name: "MyDisease.info API"
+    sourceType: service
+    version: "2020-10-26"
+    versionType: "date_last_updated"
+    method: ingest
+    ## ?? see CX notes. change description based on how parser works.
+    ##    currently assuming only aspect="P" annotations
+    descriptiveInfo: >- 
+      Downloaded the HPO phenotype.hpoa annotations file. Used aspect=P
+      annotations (disease annotated to HPO phenotypic abnormality terms)
+      to create Disease - PhenotypicFeature associations
+  - name: "HPO annotations"
+    sourceType: knowledgebase
+    version: "2020-10-13"   
+    ## ?? using date from mydisease metadata endpoint, 
+    ##    but actual release date is 2020-10-12
+    versionType: "date_last_updated"
+    ## no method since unsure how annotations were made, see descriptiveInfo
+    sourceReferences: 
+      websites: 
+      ## these should be parsed as one string with no spaces
+      ## CX: these links have out-dated info; I can tell since column
+      ##     names have changed since then
+        value: 
+        - "https://hpo-annotation-qc.readthedocs.io/en/latest/\
+           annotationFormat.html#phenotype-hpoa-format"
+        - "https://academic.oup.com/nar/article/47/D1/D1018/5198478#129642030"
+    ## CX: The HPO team mentions "parsing" webpages but I don't know if
+    ##     this is NLP, automatic mapping, manual...
+    ##     manual curation for metabolism terms is described in the 
+    ##     article link 
+    descriptiveInfo: >- 
+      Note from CX; it looks like the HPO team annotated diseases with
+      HPO terms by (1) electronically extracting info from other
+      knowledgebases (OMIM, ORPHANET, DECIPHER) and (2) manually curating
+      info using publications and knowledgebases   
+  ## ?? see written notes. interested in adding frequency/sex for 
+  ##    numeric/categorical var but there are issues/checks to discuss first
+  ## ?? see CX notes above on non-rectangular data. only a few records will have onset, frequency, sex info
+  hpoCategoricalVars:
+  - name: "HPO annotation evidence code"
+    responseField: "hpo.phenotype_related_to_disease.evidence"
+    categories: ["IEA", "PCS", "TAS"]
+    ## no direction to this set of categories
+    measureReferences:
+      websites: 
+      ## this should be parsed as one string with no spaces
+        value: "https://hpo-annotation-qc.readthedocs.io/en/latest/\
+                annotationFormat.html#phenotype-hpoa-format"        
+  - name: "HPO annotation onset"
+    responseField: "hpo.phenotype_related_to_disease.onset"
+    categories: 
+    ## terms in the Onset sub-ontology but not in the data:
+    ##   HP:0410280 (pediatric) and HP:0011460 (embryonal)
+    - "HP:0003674"  ## umbrella onset term: annotations to this term look like mistakes
+    - "HP:0030674"  ## Antenatal: present before birth
+    - "HP:0011461"  ## Fetal: after 8 weeks gestation (before birth)
+    - "HP:0003577"  ## congenital: present at birth
+    - "HP:0003623"  ## Neonatal: present in first 28 days after birth
+    - "HP:0003593"  ## infantile: 28 days after birth - 1 year after birth
+    - "HP:0011463"  ## childhood: 1-5 years after birth
+    - "HP:0003621"  ## Juvenile: 5-15 years after birth
+    - "HP:0003581"  ## adult: 16 years or older 
+    - "HP:0011462"  ## young adult: 16-40 years
+    - "HP:0003596"  ## middle age: 40-60 years
+    - "HP:0003584"  ## late: older than 60 years
+    ## ?? could try putting a directionMeaning (reading forward roughly means older onset)
+    measureReferences:
+      websites: 
+      ## this should be parsed as one string with no spaces
+        value: "https://hpo-annotation-qc.readthedocs.io/en/latest/\
+                annotationFormat.html#phenotype-hpoa-format"   
+  hpoTermReferences:                
+    websites:    ## uses the transformUsingTemplate schema
+    ## see the schema for other possible situations
+      instructions: >-
+        Create an array of one or more strings using the template. There
+        should be a separate URL for each PhenotypicFeature ID. Result should
+        be a key (websites) with a value (the array of string website URLs)
+      ## example: https://hpo.jax.org/app/browse/term/HP:0000458
+      template:
+        "https://hpo.jax.org/app/browse/term/{HPO_ID}"
+      templateKeys:  ## keywords in template
+        HPO_ID: "inputs[0]"
+        ## the HP PhenotypicFeature IDs WITH PREFIX, used as input to the query
+        ## should be an array of one or more strings 
+      bteCode: ""  
+      ## github link to the code that uses this info to process response  
+  ctdCDProvenanceList:
+  - name: "MyDisease.info API"
+    sourceType: service
+    version: "2020-10-26"
+    versionType: "date_last_updated"
+    method: ingest
+    descriptiveInfo: >- 
+      Downloaded chemical-disease associations (file name
+      CTD_chemicals_diseases.csv.gz) from CTD
+  - name: "CTD"
+    sourceType: knowledgebase    
+    version: "2020-10-01"   
+    ## ?? using date from mydisease metadata endpoint, https://github.com/biothings/mydisease.info/blob/master/src/plugins/ctd/parser.py
+    versionType: "data_from_this_date"    
+    ## ?? multiple methods, see descriptiveInfo
+    sourceReferences: 
+      websites: 
+        value: 
+        - "http://ctdbase.org/help/faq/?p=6422669"
+        - "http://ctdbase.org/help/chemDiseaseDetailHelp.jsp"
+    descriptiveInfo: >- 
+      Chemical-disease associations are manually curated (by CTD curators
+      using published literature) or inferred. An inferred association between
+      a chemical and a disease is made when both entities have manually-curated
+      associations with the same gene
+  ## ?? see CX notes above on non-rectangular data. most records have an inference_score field/value, only some records have a direct_evidence field/value. 
+  ctdCDNumericVars:      
+  - name: "CTD inference score"
+    responseField: "ctd.chemical_related_to_disease.inference_score"
+    missingValueMeaning: >-
+      If the chemical-disease gene is curated, it is direct and no
+      inference was done. There is therefore no inference score
+    measureReferences:
+      publications:
+        pmid: 
+          value: "23144783"
+      websites:
+        value: "http://ctdbase.org/help/chemDiseaseDetailHelp.jsp#inference"
+    directionMeaning:
+      "larger": "more_probable"  ## more likely to be a "real" association
+    ## Notes: this is a "weighted common-neighbor statistic" based on the network of 
+    ##        disease, chemical, and gene nodes. more shared genes -> higher score.
+    ##        more of those shared genes are hubs (high node degree) -> lower score
+    ## CX: not sure about range. it looked like all values were positive (> 1)
+    ##     and max value was >2000.      
+  ctdCDCategoricalVars:      
+  - name: "CTD direct evidence annotation"
+    responseField: "ctd.chemical_related_to_disease.direct_evidence"
+    categories:
+    - "marker/mechanism"  
+    ## chemical presence/absence/abundance/activity/etc. correlates with disease or
+    ## chemical may play role in causing disease (e.g. through exposure to it)
+      - "therapeutic"
+      ## chemical has known or potential role in treating disease
+      missingValueMeaning: >-
+        If the chemical-disease asociation is curated, information about
+        the association is provided in this field. However, most
+        CTD associations are inferred and therefore do not have this field
+      measureReferences:
+        websites:
+          value: "http://ctdbase.org/help/chemDiseaseDetailHelp.jsp"
+  ctdCPathProvenanceList:
+  - name: "MyDisease.info API"
+    sourceType: service
+    version: "2020-10-26"
+    versionType: "date_last_updated"
+    method: ingest
+    descriptiveInfo: >- 
+      Downloaded disease-pathway associations (file name
+      CTD_diseases_pathways.csv.gz) from CTD
+  - name: "CTD"
+    sourceType: knowledgebase    
+    version: "2020-10-01"   
+    ## ?? using date from mydisease metadata endpoint, https://github.com/biothings/mydisease.info/blob/master/src/plugins/ctd/parser.py
+    versionType: "data_from_this_date"    
+    method: shared_gene
+    sourceReferences: 
+      websites: 
+        value: 
+        - "http://ctdbase.org/help/faq/?p=6422675"
+        - "http://ctdbase.org/help/diseasePathwayDetailHelp.jsp"
+    descriptiveInfo: >- 
+      Disease-pathway associations are inferred. An association is made between
+      a disease and a pathway when the disease is associated with a gene (from
+      CTD manual curation) and a pathway is associated with the same gene (from
+      KEGG or Reactome manual curation)

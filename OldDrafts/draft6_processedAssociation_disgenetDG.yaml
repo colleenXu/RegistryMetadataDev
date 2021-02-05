@@ -1,0 +1,140 @@
+## example of what one disease -> gene association could look like, after BTE
+##   processing a query's API/JSON-response using the registry metadata 
+## - the specific disease -> gene association modeled: the FIRST JSON record
+##   in the API/JSON-response here:
+##   http://mydisease.info/v1/disease/MONDO:0016419?fields=
+##   disgenet.genes_related_to_disease
+## - this corresponds with the source association webpage here: 
+##   https://www.disgenet.org/browser/0/1/1/C0006142/
+##   geneid__9-source__BEFREE/_b./
+
+## CX notes:
+## - an ongoing issue: the metadata from the registry file likely doesn't need
+##   to be on every single association. See schema for notes on what was kept
+##   or left off from the registry metadata
+## this is 79 char long #######################################################
+
+  predicateInfo:  ## need the specific predicates for this edge 
+  ## use the static values from the registry file and unnest
+    biolink: "related_to"
+    id: "SIO:001403"
+    label: "SIO:is_associated_with"
+  references:    ## need the specific references for this edge 
+    publications:
+    ## the registry file told BTE what JSON field to use
+    ## then BTE inserts data from that field into the metadata structure
+      pmid:  ## note that these IDs will probably be parsed as ints...
+      - 9610785
+      - 10090301
+      - 10698485
+      - 12835615
+      - 12860276
+      - 14517345
+      - 15084249
+      - 15090724
+      - 15226672
+      - 16049806
+      - 17010218
+      - 17973251
+      - 18288399
+      - 22333393
+      - 24467436
+      - 25528056
+      - 27648926
+      - 28359264
+      - 29315819
+      - 29339455
+      - 29901116
+      - 29964355
+      - 29969986
+      - 31358821
+    websites:
+    ## the registry file told BTE what info to use and the template, then
+    ##   BTE generates the URLs and inserts them into the metadata structure
+    - "https://www.disgenet.org/browser/0/1/1/C0006142/geneid__9-source__BEFREE/"  
+  provenance:  ## need the specific prov. for this edge 
+  ## the registry file told BTE what info to use and the mapping file, then
+  ##   BTE maps the info in the JSON-response to the provenance array in 
+  ##   the mapping file and inserts the array into the metadata structure
+    associationRetrieval:
+    - name: "MyDisease.info API"
+      sourceType: service
+      version: "2020-10-26"
+      versionType: "date_last_updated"
+      method: ingest
+      descriptiveInfo: >- 
+        Downloaded the DisGeNET ALL gene-disease-pmid associations file. Merged
+        gene-disease associations that differed only in the pmid value (so each
+        association now had a list of ids in the pmid column).
+    - name: "DisGeNET"
+      sourceType: knowledgebase
+      version: "7.0"
+      versionType: "version_number"
+      method: NLP
+      sourceReferences: 
+      ## BTE should use the static values from the registry file and unnest
+        websites: "https://www.disgenet.org/dbinfo#section11"    
+      descriptiveInfo: >- 
+        The DisGeNET team used a NLP method on a text source to create
+        gene-disease associations.
+    - name: "MEDLINE abstracts"
+      sourceType: publications  
+  numericMeasures:   ## need the specific measure values for this edge 
+  ## the registry file told BTE what JSON field to use
+  ## then BTE inserts data from that field into a new sub-field (value)
+  ##   in the metadata structure  
+  - name: "DisGeNET gene-disease association score"
+    value: 0.1
+    measureReferences:
+    ## BTE should use the static values from the registry file and unnest
+      websites: "https://www.disgenet.org/dbinfo#section31"
+    range:
+      minExclusive: 0
+      maxInclusive: 1
+    directionMeaning:
+      larger: more_evidence
+  - name: "DisGeNET evidence index"
+    value: 0.917
+    measureReferences:
+    ## BTE should use the static values from the registry file and unnest
+      websites: "https://www.disgenet.org/dbinfo#section36"
+    missingValueMeaning: >-
+      This measure is calculated from BeFree and PsyGeNET info.
+      If the association was not found in those sources, this
+      measure likely was not calculated.
+    range:
+      minExclusive: 0
+      maxInclusive: 1
+    directionMeaning:
+      larger: less_conflicting_evid
+  - name: "DisGeNET disease specificity index"
+    ontologyTerm: 'SIO:001351'
+    value: 0.536
+    measureReferences:
+    ## BTE should use the static values from the registry file and unnest
+      websites: "https://www.disgenet.org/dbinfo#section33"   
+    missingValueMeaning: >-
+      This measure is calculated when a gene is associated with
+      one or more diseases. If the value is missing, this gene is
+      annotated only to phenotypes.
+    range:
+      minExclusive: 0
+      maxInclusive: 1
+    directionMeaning:
+      larger: more_specific
+  - name: "DisGeNET disease pleiotropy index"
+    ontologyTerm: 'SIO:001352'
+    value: 0.846
+    measureReferences:
+    ## BTE should use the static values from the registry file and unnest
+      websites: "https://www.disgenet.org/dbinfo#section34"    
+    missingValueMeaning: >-
+      This measure is calculated when a gene is associated with
+      one or more diseases in MeSH disease classes. If the value
+      is missing, this gene is annotated only to phenotypes OR
+      the diseases do not map to any MeSH classes.
+    range:
+      minExclusive: 0
+      maxInclusive: 1
+    directionMeaning:
+      smaller: more_specific
