@@ -9,8 +9,24 @@
 ## - from Andrew Su: for now, require less.
 
 ## issues / Q for Kevin marked @ or !!
-## - what to do when prefix for input/output/data (references, biolink) doesn't match the key/prefix used in Translator? Currently commenting if that happens - schema already tells you if there requires/contains a prefix and what the Translator prefix is
+## - Kevin raised the issue of how to do post-processing annotations (whether to add prefix or not, whether to replace prefix in string with the translator one (whether it matches translator one or not), how to break string into list with delimiter)
+##   REMOVING prefix related keys for now, can add back later
+##   options to discuss:
+##   - when getting info from a response field, just make it a string to parse like
+##     "$(disgenet.genes_related_to_disease.pmid).add_prefix().repl('pubmed','pmid').split('|')"
+##     operations: replace, split, how to add the prefix
+##     issue to me is order of operations, needing to teach others how to do
+##   - use a set of optional fields:
+##        add_prefix: true / false
+##        replace_prefix: {original: 'pubmed', new: ''}
+##        splitStrToList: '|' character to split on? 
+##     issue is that it makes the schema look bigger / more unwieldly
+##   - do we always know when we want the prefix in the value though? look at TRAPI / translator...
+
+
 ## - consider adding back a key ("when the record doesn't have this key inside...") -> use this value to for it (previously the "default" key). use for predicateInfo / references / provenance / context / categoricalMeasures?
+
+
 
 ## notes:
 ## - schema cannot enforce/check format for predicates from responseFields. However, during post-processing or later, we could string format (undercase, spaces -> underscore) and make curies
@@ -51,10 +67,10 @@ definitions:
       - inputsAndQueryInfo
       - outputs
       - predicateInfo
-      - provenance
+      - sourceInfo
     ## strongly recommended: references
     ## use as-needed: requiresPreProcessing, numericMeasures,
-    ##   categoricalMeasures, contextRelevance 
+    ##   categoricalMeasures, contexts 
     additionalProperties: False
     properties:
       inputsAndQueryInfo:
@@ -84,11 +100,25 @@ definitions:
               description: >-
                 Biolink entity class for biomedical entities in the query
               type: string
-            requiresPrefix:
+#             requiresPrefix:
+#               description: >-
+#                 Whether the API expects curies (prefixed IDs) or not. If this
+#                 field is absent, assume False (prefixes not needed)
+#               type: boolean
+            ## !! rename this field to avoid confusion? 
+            ##    this is for covid_phenotypes, other resources with very limited set of inputs 
+            expectedValues:
+            ## metaKG can use this to decide whether to query this
               description: >-
-                Whether the API expects curies (prefixed IDs) or not. If this
-                field is absent, assume False (prefixes not needed)
-              type: boolean
+                Array of the input biomedical entity IDs that the API can
+                handle, when the API has an extremely LIMITED number of
+                entities. The IDs should be in the format that the API accepts
+                (prefixed or not). The array can be incomplete (when the
+                metadata writer does not know all possible values)
+              type: array
+              minItems: 1
+              items:
+                type: string
             ## for now, comment if the API's expected prefix =/= the id value
             ##   (prefix Translator is using). We could handle this in query
             ##   construction 
@@ -149,13 +179,11 @@ definitions:
                 Dot-notation of the field in the API (JSON) response that
                 corresponds to the ID(s) of the biomedical entities
               type: string
-            containsPrefix:
-              description: >-
-                Whether the IDs for the output biomedical entities are curies
-                (prefixed IDs) or not. If this field is absent, assume False
-              type: boolean
-            ## for now, comment if the output prefix =/= the id value (prefix
-            ##   Translator is using). We could handle this in post-processing
+#             containsPrefix:
+#               description: >-
+#                 Whether the IDs for the output biomedical entities are curies
+#                 (prefixed IDs) or not. If this field is absent, assume False
+#               type: boolean
       requiresPreProcessing:
       ## using this to track when BTE is having to do this
         description: >-
@@ -180,10 +208,11 @@ definitions:
               - description: >-
                   Assign one Biolink predicate (from the related_to hierarchy)
                   that best describes the relationships (associations)
-                  returned. Format is no prefix; all undercase; spaces replaced
+                  returned. Format is all undercase; spaces replaced
                   with underscore
-                ## currently no enum since it would be LONG
                 type: string
+                ## removed format having no prefix for now
+                ## currently no enum since it would be LONG
               ## Use this when the API response has a field (see description)
               - description: >-
                   Describe the field in the API response that provides one
@@ -207,12 +236,12 @@ definitions:
                     minItems: 1
                     items:
                       type: string
-                  containsPrefix:
-                  ## assuming values are all curies or all not (no mix)
-                    description: >-
-                      Whether the field returns values with prefixes (are
-                      curies) or not. If this field is absent, assume False
-                    type: boolean   
+#                   containsPrefix:
+#                   ## assuming values are all curies or all not (no mix)
+#                     description: >-
+#                       Whether the field returns values with prefixes (are
+#                       curies) or not. If this field is absent, assume False
+#                     type: boolean   
           id: 
             oneOf:
               ## use this sub-schema (string) when API response doesn't
@@ -253,7 +282,6 @@ definitions:
                 description: Value that means the association is negated
                 type: [string, boolean]
       references:
-      ## !! Kevin and I were discussing this when we stopped 1/20/21
       ## @ currently assuming one delimiter character per response field...
         description: >- 
           Object (Python dict-like). Describes API (JSON) response fields that
@@ -266,12 +294,10 @@ definitions:
         patternProperties:
         ## Kevin: this design means ID namespaces have one unambiguous name
           "^pmid$|^pmc$|^doi$|^biorixv$|^medrxiv$|^isbn$":
+            ## removed from description: The field is expected to return a single URL (string) or an array of URLs (strings). If what is returned is instead a string representing a list, use the delimiter property
             description: >-
               Use this when the field values are IDs in a specific namespace;
-              the key specifies the namespace. The field is expected to return
-              a single URL (string) or an array of URLs (strings). If what is
-              returned is instead a string representing a list, use the
-              delimiter property
+              the key specifies the namespace
             type: object
             required:
               - responseField
@@ -281,25 +307,22 @@ definitions:
                 description: >-
                   Dot-notation of the field in the API (JSON) response
                 type: string
-              containsPrefix:
-              ## assuming values are all curies or all not (no mix) 
-                description: >-
-                  Whether the field returns values with prefixes (are curies)
-                  or not. If this field is absent, assume False
-                type: boolean
-              delimiter:
-                description: >-
-                  Only use this key if the field returns values as a string
-                  that represents a list of IDs. The value of this key is the
-                  delimiter
-                type: string
+#               containsPrefix:
+#               ## assuming values are all curies or all not (no mix) 
+#                 description: >-
+#                   Whether the field returns values with prefixes (are curies)
+#                   or not. If this field is absent, assume False
+#                 type: boolean
+#               delimiter:
+#                 description: >-
+#                   Only use this key if the field returns values as a string
+#                   that represents a list of IDs. The value of this key is the
+#                   delimiter
+#                 type: string
         properties:
           websites:
             description: >-
-              Use this when the field provides website URLs. The field is
-              expected to return a single URL (string) or an array of URLs
-              (strings). If what is returned is instead a string representing
-              a list, use the delimiter property
+              Use this when the field provides website URLs
             type: object
             required:
               - responseField
@@ -310,12 +333,12 @@ definitions:
                 description: >-
                   Dot-notation of the field in the API (JSON) response
                 type: string
-              delimiter:
-                description: >-
-                  Only use this key if the field returns values as a string
-                  that represents a list of IDs. The value of this key is the
-                  delimiter
-                type: string
+#               delimiter:
+#                 description: >-
+#                   Only use this key if the field returns values as a string
+#                   that represents a list of IDs. The value of this key is the
+#                   delimiter
+#                 type: string
           websiteTemplate:
             description: >-
               Used to describe how to generate source webpage URLs for the
@@ -349,7 +372,7 @@ definitions:
                 patternProperties:
                   .:  ## no format for these
                     type: string
-      provenance:
+      sourceInfo:
         description: >- 
           Object (Python dict-like). Provides (1) structured, static source
           info for associations returned by the operation (AKA where and how
@@ -357,9 +380,9 @@ definitions:
           provide this type of info
         type: object
         required:
-          - structured
+          - static
         properties:
-          structured:
+          static:
             description: >-
               Array of objects (Python list-of-dict-like). Describes the static
               source info that applies to ALL associations returned by this
@@ -379,7 +402,7 @@ definitions:
                 name:
                   description: Name of the source (API, knowledgebase, etc)    
                   type: string
-              ## !! see https://github.com/NCATS-Tangerine/translator-api-registry/pull/41/files, https://drive.google.com/file/d/1KSN1MDcAzekdMUiyHZYFUL20otrluJg3/view (downloaded locally) to see how to spell/case names. Record what I'm doing in FileONames  
+              ## !! see https://github.com/NCATS-Tangerine/translator-api-registry/pull/41/files, https://docs.google.com/spreadsheets/u/1/d/1Ma4U3aY16mJushsW74vf9mWVacFvf7FiTEdlVqaUi5g/edit#gid=257896357 to see how to spell/case names. Record what I'm doing in FileONames  
                 sourceType:  ## @ later set enum                   
                   description: Type of the source
                 ## !! Record what I'm using in FileONames  
@@ -416,27 +439,24 @@ definitions:
           dynamic:
           ## use when field provides values that vary (so API provides 
           ##   associations from multiple sources
+          ## removed from description: The field is expected to return a string (representing one piece of source info) or an array of strings (representing multiple pieces of info). If what is returned is instead a string representing a list, use the delimiter property
             description: >-
               Array of objects (Python list-of-dict-like). Describes API (JSON)
-              response fields that provide source info. The field is expected
-              to return a string (representing one piece of source info) or an
-              array of strings (representing multiple pieces of info). If what
-              is returned is instead a string representing a list, use the
-              delimiter property
+              response fields that provide source info
             type: array
             minItems: 1
             items:
               type: object
               required:
                 - responseField
-                - provenanceType
+                - sourceInfoType
               additionalProperties: False
               properties:
                 responseField: 
                   description: >-
                     Dot-notation of the field in the API (JSON) response
                   type: string
-                provenanceType:
+                sourceInfoType:
                   description: >-
                     Keyword describing what kind of info the field provides 
                   type: string
@@ -455,14 +475,13 @@ definitions:
                   minItems: 1
                   items:
                     type: string                  
-                delimiter:
-                  description: >-
-                    Only use this key if the field returns values as a string
-                    that represents a list of IDs. The value of this key is the
-                    delimiter
-                  type: string
-      context:
-      ## WHERE and WHEN is this association valid/relevant
+#                 delimiter:
+#                   description: >-
+#                     Only use this key if the field returns values as a string
+#                     that represents a list of IDs. The value of this key is the
+#                     delimiter
+#                   type: string
+      contexts:
         description: >- 
           Object (Python dict-like). Context is information that restricts the
           use or interpretation of this association. It helps one know if the
@@ -506,12 +525,12 @@ definitions:
                     minItems: 1
                     items:
                       type: string
-                  containsPrefix:
-                  ## assuming values are all curies or all not (no mix)
-                    description: >-
-                      Whether the field returns values with prefixes (are
-                      curies) or not. If this field is absent, assume False
-                    type: boolean
+#                   containsPrefix:
+#                   ## assuming values are all curies or all not (no mix)
+#                     description: >-
+#                       Whether the field returns values with prefixes (are
+#                       curies) or not. If this field is absent, assume False
+#                     type: boolean
       ## @ may set up fields later for other info, like what was used to infer
       ##   associations via triangulation (e.g. variant for disease->gene),
       ##   text-mining info, clinical-data/exposures info
@@ -529,10 +548,10 @@ definitions:
             ## includes additional properties for numeric measures
             - type: object
               required:
-                - directionMeaning
+                - directionMeanings
               ## don't set additionalProperties to False, will mess with allOf
               properties:
-                directionMeaning:
+                directionMeanings:
                   description: >-
                     Object (Python dict-like). Each key is a direction (larger,
                     closer_to_zero, more_negative, etc.). Each value is what
@@ -588,14 +607,13 @@ definitions:
       ##   variable from stats (which takes on only ONE value). So definition
       ##   has been changed to accommodate this. 
       ## @ Use singleValuesOnly flag to note stats categorical vars
+      
+      ## removed from description: The field is expected to return a string (representing one keyword) or an array of strings (representing multiple keywords). If what is returned is instead a string representing a list, use the delimiter property      
         description: >- 
           Array of objects (Python list-of-dict-like). Describes API (JSON)
           response fields that provide one or more keyword (string) values
           related to the association and do not fit into the other fields
-          (predicateInfo, provenance, contextRelevance). The field is expected
-          to return a string (representing one keyword) or an array of strings
-          (representing multiple keywords). If what is returned is instead a
-          string representing a list, use the delimiter property
+          (predicateInfo, provenance, contextRelevance)
         type: array
         minItems: 1
         items:
@@ -622,13 +640,13 @@ definitions:
                     association. It can therefore be treated as a categorical
                     variable in statistics
                   type: boolean                    
-                delimiter:
-                  description: >-
-                    Only use this key if the field returns values as a string
-                    that represents a list of IDs. The value of this key is the
-                    delimiter
-                  type: string
-                directionMeaning:
+#                 delimiter:
+#                   description: >-
+#                     Only use this key if the field returns values as a string
+#                     that represents a list of IDs. The value of this key is the
+#                     delimiter
+#                   type: string
+                directionMeanings:
                   description: >-
                     Object (Python dict-like). The key is the direction to
                     reada the expectedValues, forward or reverse. The value is
@@ -641,6 +659,35 @@ definitions:
                   ## @ later set enum for keys and values?
                     forward|reverse:    ## no format for these
                       type: string
+      otherProperties:
+        description: >-
+          Array of objects (Python list-of-dict-like). Describes other edge
+          properties and their corresponding API (JSON) response field
+        type: array
+        minItems: 1
+        items:
+          type: object
+          required:
+            - domainArea
+            - responseField
+          additionalProperties: False
+          properties:
+            domainArea:
+            ## !! later make enum
+              description: >-
+                Keyword for what domain area this property is specific to.
+                Could have values like text_mining, gene_expression_data, etc.
+              type: string
+            responseField:  
+              description: >-
+                Dot-notation of the field in the API (JSON) response that
+                corresponds to the ID(s) of the biomedical entities
+              type: string
+#             containsPrefix:
+#               description: >-
+#                 Whether the IDs for the output biomedical entities are curies
+#                 (prefixed IDs) or not. If this field is absent, assume False
+#               type: boolean                                           
 ## this is 79 char long #######################################################
 ## for references from main oneAssociationRetrievalObj sub-schema
   simplePredFromResponse:
