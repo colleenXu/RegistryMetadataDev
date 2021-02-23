@@ -1,0 +1,74 @@
+Example 1: let's say an external API gives PMID reference info like this:
+
+associations:
+  references: 'pmid:432934|pmid:432914|pmid:432931'
+
+METADATA
+
+basic
+references:
+  pmid:
+    responseField: associations.references
+
+option 1:
+references:
+  pmid: "$(associations.references).replace('pmid', '').split('|')"
+
+option 2:
+references:
+  pmid: 
+    responseField: associations.references
+    replaceStr:  ## list of old/new pairs for replace
+    - old: "pmid"
+      new: ""
+    split: "|"
+
+
+but what about adding post-processing info, so we could automatically post-process this into a standard format?
+note: what is the standard format? curies or just IDs? I'll assume just IDs for the sake of this example
+
+common operations: 
+- add prefix?
+- replace (includes removing prefix)
+- split string into list (need to know delimiter, will there be more than one char that is delimiter?)
+
+OPTION 1: have a string with the response field and operations you want to do on it
+issue: order of operations/parsing the string, dealing with JSON char issues?, teaching others how to write it
+
+OPTION 2: use a set of optional fields to describe how to post-process. BTE code then controls what order the stuff is done in.
+issue: makes schema look longer/bulky
+
+
+Example 2: let's say an external API gives an external predicate like (CTD) chemical-gene interaction "affects response to substance"
+
+chemical-gene-interactions:
+  "interaction_actions": "affects response to substance"
+
+so...we'd want to treat this as a predicate in biolink, which normally is a curie with spaces -> underscore. So...
+
+option 1:
+predicateInfo:
+  id: $(chemical-gene-interactions."interaction_actions").add_prefix('CTD').replace(' ', '_')
+
+OPTION 2: 
+predicateInfo:
+  id: 
+    responseField: chemical-gene-interactions."interaction_actions"
+    addPrefix: 'CTD'
+    replaceStr:  ## list of old/new pairs for replace
+    - old: " "
+      new: "_"
+
+## - Kevin raised the issue of how to do post-processing annotations (whether to add prefix or not, whether to replace prefix in string with the translator one (whether it matches translator one or not), how to break string into list with delimiter)
+##   REMOVING prefix related keys for now, can add back later
+##   options to discuss:
+##   - when getting info from a response field, just make it a string to parse like
+##     "$(disgenet.genes_related_to_disease.pmid).add_prefix().repl('pubmed','pmid').split('|')"
+##     operations: replace, split, how to add the prefix
+##     issue to me is order of operations, needing to teach others how to do
+##   - use a set of optional fields:
+##        add_prefix: 'CTD' (string prefix to add) 
+##        replace_prefix: {original: 'pubmed', new: ''}
+##        splitStrToList: '|' character to split on? 
+##     issue is that it makes the schema look bigger / more unwieldly
+##   - do we always know when we want the prefix in the value though? look at TRAPI / translator...
