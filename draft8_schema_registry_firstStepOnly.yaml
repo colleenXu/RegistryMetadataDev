@@ -1,0 +1,344 @@
+title: Schema for x-bte-association-retrieval operations
+$schema: 'http://json-schema.org/draft-07/schema#'
+type: object
+description: >-
+  Describes the x-bte-association-retrieval metadata extension within SmartAPI
+  registry files. Knowledge-provider (KP) APIs in the Translator ecosystem
+  provide associations/edges between biomedical entities. This extension
+  includes 1) additional support for querying those APIs, 2) metadata for
+  processing API responses, and 3) metadata to add information to the API
+  responses
+required:
+  - components
+properties:
+  components:
+    type: object
+    properties:
+      x-bte-association-retrieval:
+        definition: >-
+          Each key inside this object corresponds to one association-retrieval
+          operation. An operation has inputs from one Biolink entity class,
+          outputs from one Biolink entity class, and one unique set of metadata
+        type: object
+        minProperties: 1
+        patternProperties:
+          .:  ## usually named inputType-outputType-number
+            $ref: '#/definitions/oneAssociationRetrievalObj'
+definitions:
+  oneAssociationRetrievalObj:
+    type: object
+    ## now: requiring the minimum. future: also require provenance
+    required:
+      - inputsAndQueryInfo
+      - outputs
+      - predicateInfo
+    additionalProperties: False
+    properties:
+    ## now: this structure should lead to LESS querying.
+    ##      Since inputs/outputs can all be described/handled thru ONE query
+      inputsAndQueryInfo:
+      ## For Kevin: if this has multiple elements (ex: MESH and OMIM Disease)
+      ##            and the entity has both IDs (ex: MESH and OMIM IDs in the hint obj),
+      ##            decide whether to do multiple queries or just one (the first element matched)
+        description: >-
+          Array of objects (Python list-of-dict-like). Describes valid inputs
+          and info for querying the API. When this array has >1 element, the
+          relationship between the elements is OR (the API can take A OR B as
+          input). All elements should have the same Biolink entity class
+        type: array
+        minItems: 1
+        items:
+          type: object
+          required:
+            - id
+            - semantic
+            - queryInfo
+          additionalProperties: False
+          properties:
+            id:  
+              description: >-
+                Translator-compliant namespace prefix for the IDs of the
+                biomedical entities in the query
+              type: string  ## usually all-caps
+            semantic:
+              description: >-
+                Biolink entity class for the biomedical entities in the query
+              type: string
+            ## FIRST STEP: include (but this is new)
+            ## future: metaKG can use this to decide whether to query
+            restrictedTo:
+              description: >-
+                Array of the IDs that the API can handle. Use this property
+                ONLY when the operation has an extremely LIMITED number of
+                valid inputs. The IDs should be in the format that the API
+                accepts (prefixed or not). The array can be incomplete (which
+                occurs when the metadata writer does not know all possible
+                values)
+              type: array
+              minItems: 1
+              items:
+                type: string
+            queryInfo:
+              description: >- 
+                Contains info on the query (API call) for this operation. The
+                OpenAPI /paths/operations may have specific fields (e.g.
+                parameters, responseBody), and these can be set here
+              type: object
+              minProperties: 1
+              ## FIRST STEP: MAKE PARAMETER-FIELDS multiple elements/large so we return more
+              ##      Since now we can handle that in the outputs, response-mapping
+              properties:
+                supportsBatch:
+                  description: >-
+                    If this field is absent, assume False (API does not support
+                    batch querying)
+                  type: boolean
+                inputSeparator:
+                  type: string
+                path: 
+                  type: string
+                method:
+                  type: string
+                ## FIRST STEP: note prefix if this API query needs it
+                ## future: processing notation in the input string?? (like Django/Jinja)               
+                parameters:
+                  type: object
+                requestBody:
+                  type: object  
+      outputs:
+      ## For Kevin: if this has multiple elements (ex: REACT and KEGG),
+      ##            iterate to find the idField that is also in the response record.
+      ##            Use the first one that resolves.
+        description: >-
+          Array of objects (Python list-of-dict-like). Describes valid outputs
+          and their corresponding API (JSON) response field. When this array
+          has >1 element, the relationship between the elements is OR (the
+          output will be in A OR B format)
+        type: array
+        minItems: 1
+        ## FIRST STEP: using two response-field-mappings, one for ID and one for name
+        ##   old x-bte was able to do this, so this has the option too
+        items:
+          type: object
+          required:
+            - id
+            - semantic
+            - idField
+          additionalProperties: False
+          properties:
+            id:
+              description: >-
+                Translator-compliant namespace prefix for the IDs of the
+                biomedical entities in the API response
+              type: string
+            semantic:
+              description: >-
+                Biolink entity class for biomedical entities in the API
+                response
+              type: string
+            ## FIRST STEP: note if response fields have prefix/post-processing issues
+            ##             (string -> list, find/replace, etc.)
+            ## future: processing notation in the input string?? (like Django/Jinja)               
+            idField:  
+              description: >-
+                Dot-notation of the field in the API response that corresponds
+                to the IDs of the biomedical entities
+              type: string
+            nameField:  
+              description: >-
+                Dot-notation of the field in the API response that corresponds
+                to the names of the biomedical entities
+              type: string 
+      ## NOT FOR FIRST STEP: requiresPreProcessing, hasInternalQueryExpansion. requires additional curation
+      ## future: internalQueryExpansion may need multiple flags
+      ##  - for node expansion. True means when output is DiseaseOrPhenotypicFeature,
+      ##    API returns that, Disease, and PhenotypicFeature. 
+      ##  - for predicate expansion? unclear...may depend on future steps where predicate can be response-mapped
+      predicateInfo:
+        type: object
+        required:
+          - biolink
+        additionalProperties: False
+        properties: 
+          biolink:
+            oneOf:
+              ## FIRST STEP: only use this sub-schema, like old x-bte. DON'T DO more curation
+              ##             remember to use one predicate from Biolink related_to hierarchy
+              ##             format undercase, underscores, no prefix
+              - type: string
+              ## future: can map to response field with expectedValues for metaKG, 
+              ##         responseField prefix/post-processing notation like Django/Jinja
+          ## NOT FOR FIRST STEP: id (non-biolink predicate), label, negated. 
+          ##   id, label have same structure as biolink.
+          ## future: add id for as many operations as possible?
+      references:
+        description: >- 
+          Object (Python dict-like). Describes API response fields that
+          provide publications and webpages related to associations
+        type: object
+        additionalProperties: False
+        minProperties: 1
+        patternProperties:
+        ## Kevin: this design means a field has one unambiguous name and ID namespace...
+        ## Colleen: add names here as they are encountered
+          "^pmid$|^pmc$|^doi$|^biorixv$|^medrxiv$|^isbn$|^omim$|^orpha$|^websites$":
+            type: object
+            required:
+              - responseField
+            additionalProperties: False
+            properties:
+            ## FIRST STEP: note if response fields have prefix/post-processing issues
+            ##             (string -> list, find/replace, etc.)
+            ## future: processing notation in the input string?? (like Django/Jinja)   
+              responseField: 
+                description: >-
+                  Dot-notation of the field in the API response
+                type: string
+        ## future: have a websiteTemplate property that uses processing notation (like Django/Jinja) to 
+        ##         describe how to generate the KP-source's webpage for the association??
+      provenances:
+      ## future: 
+      ## 1. discuss how to handle API fields that describe deeper source info
+      ##    (another property called fromKPSource (obj) -> names/methods keys that map to response fields?)
+      ## 2. I thought knowledgeProvider and kpSource were static. but discuss if their keys (name/method/etc.)
+      ##    can map to response field, maybe with responseField post-processing notation like Django/Jinja.
+      ##    The problem with direct mapping would be diff vocabs for methods, names between KPs
+        description: >- 
+          Object (Python dict-like). Provides structured source info
+          for associations returned by the operation (AKA where and how
+          they were made)
+        type: object
+        required:
+          - knowledgeProvider
+        properties:
+          ## FIRST STEP: this is like old x-bte api_name. DON'T DO more curation
+          ## future: curation for other properties, require kpType / method?
+          knowledgeProvider:
+            description: >-
+              Object (Python dict-like). Describes the knowledge provider
+              that provided the associations returned by this operation
+            required:
+              - name
+            additionalProperties: False
+            properties:
+              name:
+                description: Name of the knowledge provider API or resource  
+                type: string
+              ## see https://github.com/NCATS-Tangerine/translator-api-registry/pull/41/files, https://docs.google.com/spreadsheets/u/1/d/1Ma4U3aY16mJushsW74vf9mWVacFvf7FiTEdlVqaUi5g/edit#gid=257896357 to see how to spell/case names. Record what I'm doing in FileONames  
+          ## FIRST STEP: this is like old x-bte api_source. DON'T DO more curation
+          ## future: curation for other properties, require kpType / method?
+          kpSource:  
+            description: >-
+              Object (Python dict-like). Describes the source of data/knowledge
+              that the knowledge provider used
+            required:
+              - name
+            additionalProperties: False
+            properties:
+              name:
+                description: Name of the source
+                type: string
+              ## see https://github.com/NCATS-Tangerine/translator-api-registry/pull/41/files, https://docs.google.com/spreadsheets/u/1/d/1Ma4U3aY16mJushsW74vf9mWVacFvf7FiTEdlVqaUi5g/edit#gid=257896357 to see how to spell/case names. Record what I'm doing in FileONames  
+      contexts:
+        description: >- 
+          Object (Python dict-like). Context is information that restricts the
+          use or interpretation of this association. It helps one know if the
+          operation or the associations retrieved are relevant to the question
+          being asked. The keys specify the type of context that is being
+          provided. The values should be from ontologies (prefixed IDs, curies)
+          or keywords (short strings)
+        type: object
+        additionalProperties: False
+        minProperties: 1
+        patternProperties:
+          ## @ assuming one field per context type (key) 
+          taxonSpecific|diseaseSpecific|cohortSpecific|experimentalSpecific:
+            oneOf:
+              ## FIRST STEP: only use this sub-schema, like old x-bte. DON'T DO more curation
+              ##             remember to use one ontology term (ideally an OWL Class)
+              ##             format prefix:ID
+              - type: string
+              ## future: can map to response field with expectedValues for metaKG, 
+              ##         responseField prefix/post-processing notation like Django/Jinja
+      numericMeasures:
+        description: >- 
+          Array of objects (Python list-of-dict-like). Describes API
+          response fields that provide a numeric value related to the
+          association. Often from an analysis used to evaluate the association
+        type: array
+        minItems: 1
+        items:
+        ## FIRST STEP: only include name and responseField (required by generalMeasure).
+        ##             DON'T DO more curation
+        ## future: curation for other properties, require directionMeanings?
+          allOf:
+            - $ref: '#/definitions/generalMeasure'   
+      categoricalMeasures:
+      ## @ many fields treat this as a list of keywords, not a categorical
+      ##   variable from stats (with only one value per record). So definition
+      ##   has been changed to accommodate this. 
+      ## @ Use singleValuesOnly flag to note stats categorical vars
+        description: >- 
+          Array of objects (Python list-of-dict-like). Describes API
+          response fields that do not fit into the other properties
+          (predicateInfo, provenances, contexts) and provide one or
+          more keyword (string) values related to the association 
+        type: array
+        minItems: 1
+        items:
+        ## FIRST STEP: only include name and responseField (required by generalMeasure).
+        ##             DON'T DO more curation
+        ## future: curation for other properties, 
+        ##         require expectedValues? singleValuesOnly flag also important
+          allOf:
+            - $ref: '#/definitions/generalMeasure'   
+      otherProperties:
+      ## where to put everything else in old x-bte response mapping. 
+      ## future: may include stuff like what was used to infer
+      ##   associations via triangulation (e.g. variant for disease->gene),
+      ##   text-mining info, clinical-data/exposures info
+        description: >-
+          Array of objects (Python list-of-dict-like). Describes other edge
+          properties and their corresponding API response field
+        type: array
+        minItems: 1
+        items:
+          type: object
+          required:
+            - domainArea
+            - responseField
+          additionalProperties: False
+          properties:
+            domainArea:
+            ## future: make enum
+              description: >-
+                Keyword for what domain area this property is specific to.
+                Could have values like text_mining, gene_expression_data, etc.
+              type: string
+            ## future: responseField prefix/post-processing notation like Django/Jinja
+            responseField:  
+              description: >-
+                Dot-notation of the field in the API (JSON) response that
+                corresponds to the ID(s) of the biomedical entities
+              type: string                                        
+## this is 79 char long #######################################################
+## for references from main oneAssociationRetrievalObj sub-schema
+  ## assumes a measure's values are in one API response field
+  ## oneNumericMeasure and oneCategoricalMeasure build on generalMeasure
+  generalMeasure:  
+    type: object
+    required:
+    - name
+    - responseField
+    ## don't set additionalProperties to False, will mess with allOf
+    properties:
+      name:
+        description: >-
+          Name of the measure (include the name of the resource that
+          calculated it)
+        ## !! Record what I'm using in FileONames
+        type: string
+      responseField:
+        description: >-
+          Dot-notation of the field in the API response
+        type: string
