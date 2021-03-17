@@ -184,16 +184,20 @@ definitions:
                     of the output biomedical entities
                   type: string 
       ## NOT FOR FIRST STEP: testExample, requiresPreProcessing, apiHasDeduction. requires additional curation
-#       testExample:  ## this would be optional. Give an ID for input, and one expected output ID
-#         type: object
-#         required:
-#           - qInput
-#           - oneOutput
-#         properties:
-#           qInput:
-#             type: string
-#           oneOutput:
-#             type: string
+      ## still need to decide the format for testing...What if there are multiple IDs for input or output (the AND / OR)? 
+#       testExample:  ## this would be optional. Each set has ID for 1 input biomedical entity, and one expected output biomedical entity ID
+#         type: array
+#         minItems: 1
+#         items:
+#           type: object
+#           required:
+#             - qInput
+#             - oneOutput
+#           properties:
+#             qInput:
+#               type: string
+#             oneOutput:
+#               type: string
 #       requiresPreProcessing:
 #         description: >-
 #           Whether the API response-field mapping requires that BTE first
