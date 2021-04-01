@@ -28,6 +28,9 @@ properties:
 definitions:
   oneAssociationRetrievalObj:
     type: object
+    ## TO ADD?
+    ## - fields to add TRAPI stuff (attribute_type stuff) to list stuff like numericMeasures, categoricalMeasures
+    ## - notes on how to map this format (provenance, references, predicateInfo, context to TRAPI format with attribute_type stuff)? 
     ## now: requiring the minimum. future: also require provenance
     required:
       - inputsAndQueryInfo
@@ -121,6 +124,7 @@ definitions:
                     ## future: processing notation in the input string? (like Django/Jinja)               
                     parameters:
                       type: object
+                    ## ?? a size parameter should always have a number value, rather than a string?
                     requestBody:
                       type: object 
       outputs:
@@ -367,16 +371,18 @@ definitions:
         additionalProperties: False
         minProperties: 1
         patternProperties:
-          ## @ assuming one field per context type (key) 
+        ## note: hard to treat like references, since not all things (cohort, tissue, cell line) may have an ID/curie...
+        ## future: previously thought it would inherit from basicFromResponse. But there are decisions on whether there is only one field per key (context-type), whether to include ID namespace / semantic-type 
+        ## @ add categories here as they are encountered
           taxonSpecific|diseaseSpecific|cohortSpecific|experimentalSpecific:
-            oneOf:
-              ## FIRST STEP: only use this sub-schema, like old x-bte. DON'T DO more curation
-              ##             remember to use one ontology term (ideally an OWL Class)
-              ##             format prefix:ID
-              - type: string
-              ## future: can map to response field with expectedValues for metaKG, 
-              ##         responseField prefix/post-processing notation like Django/Jinja
-#               - $ref: '#/definitions/basicFromResponse'
+            type: object
+            required:
+              - responseField
+            additionalProperties: False
+            properties:
+              responseField: 
+                description: Dot-notation of the API field
+                type: string
       numericMeasures:
         description: >- 
           Array of objects (Python list-of-dict-like). Describes API fields
@@ -531,6 +537,7 @@ definitions:
               type: string
             domainArea:
             ## future: make enum
+            ## values so far: description, alt_output_id
               description: >-
                 Keyword for what domain area this property is specific to.
                 Could have values like text_mining, gene_expression_data, etc.

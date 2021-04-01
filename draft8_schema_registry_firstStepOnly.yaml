@@ -28,6 +28,9 @@ properties:
 definitions:
   oneAssociationRetrievalObj:
     type: object
+    ## TO ADD?
+    ## - fields to add TRAPI stuff (attribute_type stuff) to list stuff like numericMeasures, categoricalMeasures
+    ## - notes on how to map this format (provenance, references, predicateInfo, context to TRAPI format with attribute_type stuff)? 
     ## now: requiring the minimum. future: also require provenance
     required:
       - inputsAndQueryInfo
@@ -121,6 +124,7 @@ definitions:
                     ## future: processing notation in the input string? (like Django/Jinja)               
                     parameters:
                       type: object
+                    ## ?? a size parameter should always have a number value, rather than a string?
                     requestBody:
                       type: object 
       outputs:
@@ -184,6 +188,7 @@ definitions:
                     of the output biomedical entities
                   type: string 
       ## NOT FOR FIRST STEP: testExample, requiresPreProcessing, apiHasDeduction. requires additional curation
+      ## still need to decide the format for testing...What if there are multiple IDs for input or output (the AND / OR)? 
       predicateInfo:
         type: object
         required:
@@ -253,7 +258,7 @@ definitions:
               name:
                 description: Name of source
                 type: string
-              ## see https://github.com/NCATS-Tangerine/translator-api-registry/pull/41/files, https://docs.google.com/spreadsheets/u/1/d/1Ma4U3aY16mJushsW74vf9mWVacFvf7FiTEdlVqaUi5g/edit#gid=257896357 to see how to spell/case names. Record what I'm doing in FileONames  
+              ## see https://github.com/NCATS-Tangerine/translator-api-registry/pull/41/files, https://docs.google.com/spreadsheets/u/1/d/1Ma4U3aY16mJushsW74vf9mWVacFvf7FiTEdlVqaUi5g/edit#gid=257896357 to see how to spell/case names. Record what I'm doing in FileONames
       contexts:  ## will be optional
         description: >- 
           Object (Python dict-like). Context is information that restricts the
@@ -265,15 +270,18 @@ definitions:
         additionalProperties: False
         minProperties: 1
         patternProperties:
-          ## @ assuming one field per context type (key) 
+        ## note: hard to treat like references, since not all things (cohort, tissue, cell line) may have an ID/curie...
+        ## future: previously thought it would inherit from basicFromResponse. But there are decisions on whether there is only one field per key (context-type), whether to include ID namespace / semantic-type 
+        ## @ add categories here as they are encountered
           taxonSpecific|diseaseSpecific|cohortSpecific|experimentalSpecific:
-            oneOf:
-              ## FIRST STEP: only use this sub-schema, like old x-bte. DON'T DO more curation
-              ##             remember to use one ontology term (ideally an OWL Class)
-              ##             format prefix:ID
-              - type: string
-              ## future: can map to response field with expectedValues for metaKG, 
-              ##         responseField prefix/post-processing notation like Django/Jinja
+            type: object
+            required:
+              - responseField
+            additionalProperties: False
+            properties:
+              responseField: 
+                description: Dot-notation of the API field
+                type: string
       numericMeasures:
         description: >- 
           Array of objects (Python list-of-dict-like). Describes API fields
@@ -287,6 +295,7 @@ definitions:
         ## future: curation for other properties, require directionMeanings?
           allOf:
             - $ref: '#/definitions/generalMeasure'   
+            ## includes additional properties for numeric measures
       categoricalMeasures:
       ## @ many fields treat this as a list of keywords, not a categorical
       ##   variable from stats (with only one value per record). So definition
@@ -306,6 +315,7 @@ definitions:
         ##         require expectedValues? singleValuesOnly flag also important
           allOf:
             - $ref: '#/definitions/generalMeasure'   
+            ## includes additional properties for categorical measures
       otherProperties:
       ## where to put everything else in old x-bte response mapping. 
       ## future: may include stuff like what was used to infer
@@ -331,6 +341,7 @@ definitions:
               type: string
             domainArea:
             ## future: make enum
+            ## values so far: description, alt_output_id
               description: >-
                 Keyword for what domain area this property is specific to.
                 Could have values like text_mining, gene_expression_data, etc.
@@ -340,8 +351,7 @@ definitions:
               description: >-
                 Dot-notation of the API field
               type: string                                        
-## this is 79 char long #######################################################
-## for references from main oneAssociationRetrievalObj sub-schema
+## this is 79 char long #######################################################  
   ## assumes a measure's values are in one API field
   ## oneNumericMeasure and oneCategoricalMeasure build on generalMeasure
   generalMeasure:  
