@@ -1,58 +1,38 @@
-## names of resources
-"MyDisease.info API"
-DisGeNET  
-GeneRIFs  (notice the plural)
-"MEDLINE abstracts"
-"HPO annotations"
-"UniProtKB" (something that is Trembl or swissprot specific still gets this name)
-"Cancer Genomics Interpreter"  ## everything from here gets this name (3 separate datasets)
-ClinVar
-NHGRI-EBI GWAS Catalog
-GWASdb
-MGD
-RGD
-CTD
-ClinGen
-"Genomics England PanelApp"
-PsyGeNET
-Orphanet
+## names of kpSources
 
-"Automat CORD19 Scigraph API"
-"CORD19 Dataset"
-"Automat CORD19 Scibite API"
+## okay format
+Monarch Initiative   ## for biolink api
+Gene Ontology  ## for go_bp, go_mf, go_cc, quickgo apis
+EBI Gene2Phenotype
+Human Phenotype Ontology  ## for hpo api
+DGIdb  ## for dgidb api
+DrugCentral  ## mychem
+DrugBank  ## mychem
+PANTHER  ## mygene
+Ensembl  ## mygene
+UniprotKB   ## mygene
+ConsensusPathDB   ## mygene
+Reactome   ## mygene
+HPO Annotations  ## mydisease
+DisGeNET  ## mydisease
 
-"Monarch Initiative Biolink API"
 
-## version types 
-date_last_updated 
-version_number
-data_from_this_date  ## generic because I don't really know what this is: not date_downloaded, version_date, etc...
-latest_date_covered  ## dealing with a range of dates? really it's the latest date that keeps updating so give this. 
+## may want to change case/wording but fine
+DO  ## ontology lookup service (ols) api. change to Disease Ontology?
+CHEMBL  ## opentargets api
+dbsnp  ## myvariant.info, litvar
+clinvar   ## myvariant.info
+civic  ## myvariant.info
+UBERON Ontology  ## uberon api. change (full name only or abbreviation UBERON only)?
+LINCS ## for LINCS api. maybe change to BD2K-LINCS DCIC? see bottom of http://lincsportal.ccs.miami.edu/dcic-portal/
+MONDO  ## mydisease (full name?)   
+CTD  ## mydisease (full name?)
+Automat covid_phenotypes    ## mydisease
 
-## methods
-## if you don't know the exact method then leave this off
-ingest
-NLP
-manual_curation  ## means people are trained to do this (aka curators) and/or submissions are REVIEWED by curators before entering KB
-## shared_n means association made since both entities annotated to the same thing (n)
-shared_phenotype
-shared_disease
-shared_variant
-submission  ## these are made by people BUT these aren't necessarily made or reviewed by curators
-orthology_mapping ## association was in other species, mapped to human
-shared_gene
 
-## types of knowledge sources
-service
-knowledgebase  ## called GeneRIFs this since it's a collection of annotations
-publications
-## so what would be a database rather than a KB? 
-
-directionMeaning
-smaller
-larger
-
-more_evidence
-more_specific
-less_conflicting_evid
-more_probable  ## maybe more likely to be a "real" association. related to statistics / network-based methods (co-occurrance or network topology connectivity is more than expected based on random / assumptions)
+## likely needs changing?
+mgi_gene2phenotype  ## actually should be Mouse Genome Informatics (MGI)? 
+Text Mining KP  ## text mining api. is this correct?
+Multiomics Provider  ## for TCGA mutation freq api (should be TCGA instead?) and drug response api (should be GDSC instead?)
+DISEASES   ## DISEASES api. change to something else that makes clearer what this is?
+NCBI Gene  ## mygene. maybe should be Gene Ontology Annotations instead?

@@ -326,11 +326,12 @@ definitions:
 #                   associations (remember to only include stable info)
 #                 type: string
           ## FIRST STEP: this is like old x-bte source field. DON'T DO more curation
-          ## future: curation for other properties, require sourceType / method?
-          kpSource:  
+          ## future: curation for other properties, require sourceType / method? perhaps this info is static?
+          kpSource: 
             description: >-
               Object (Python dict-like). Describes the source of data/knowledge
               that the knowledge provider used
+            type: object
             required:
               - name
             additionalProperties: False
@@ -338,7 +339,7 @@ definitions:
               name:
                 description: Name of source
                 type: string
-              ## see https://github.com/NCATS-Tangerine/translator-api-registry/pull/41/files, https://docs.google.com/spreadsheets/u/1/d/1Ma4U3aY16mJushsW74vf9mWVacFvf7FiTEdlVqaUi5g/edit#gid=257896357 to see how to spell/case names. Record what I'm doing in FileONames  
+              ## Record what I'm doing in FileONames  
 #               sourceType:  ## keywords/enum? like service, knowledgebase           
 #                 type: string
 #               version:
@@ -360,7 +361,34 @@ definitions:
 #                   Free-text description of what the source did to create
 #                   associations (remember to only include stable info)
 #                 type: string
+          internalDataSource:
+          ## use for dynamic source info. Thinking each property below (name, method) would use basicFromResponse template 
+          ## FIRST STEP: note if response fields have prefix/post-processing issues
+          ##             (string -> list, find/replace, etc.)
+          ## future: processing notation in the input string?? (like Django/Jinja)
+            description: >-
+              Object (Python dict-like). Describes the source info provided in the data/knowledge
+            type: object
+            required:
+              - name
+            additionalProperties: False
+            properties:
+              name:
+                type: object
+                required:
+                  - responseField
+                additionalProperties: False
+                properties:
+                  responseField: 
+                    description: Dot-notation of the API field
+                    type: string
       contexts:  ## will be optional
+      ## currently using for dynamic context info. 
+      ## FIRST STEP: note if response fields have prefix/post-processing issues
+      ##             (string -> list, find/replace, etc.)
+      ## future: processing notation in the input string?? (like Django/Jinja)
+      ## note: hard to treat like references, since not all things (cohort, tissue, cell line) may have an ID/curie...
+      ## future: previously thought it would inherit from basicFromResponse. But there are decisions on whether there is only one field per key (context-type), whether to include ID namespace / semantic-type 
         description: >- 
           Object (Python dict-like). Context is information that restricts the
           use or interpretation of this association. It helps one know if the
@@ -371,8 +399,6 @@ definitions:
         additionalProperties: False
         minProperties: 1
         patternProperties:
-        ## note: hard to treat like references, since not all things (cohort, tissue, cell line) may have an ID/curie...
-        ## future: previously thought it would inherit from basicFromResponse. But there are decisions on whether there is only one field per key (context-type), whether to include ID namespace / semantic-type 
         ## @ add categories here as they are encountered
           taxonSpecific|diseaseSpecific|cohortSpecific|experimentalSpecific:
             type: object
