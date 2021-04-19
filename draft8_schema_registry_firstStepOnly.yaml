@@ -30,7 +30,7 @@ definitions:
     type: object
     ## TO ADD?
     ## - fields to add TRAPI stuff (attribute_type stuff) to list stuff like numericMeasures, categoricalMeasures
-    ## - notes on how to map this format (provenance, references, predicateInfo, context to TRAPI format with attribute_type stuff)? 
+    ## - notes on how to map this format (provenance, references, predicateInfo, context to TRAPI format with attribute_type stuff)?
     ## now: requiring the minimum. future: also require provenance
     required:
       - inputsAndQueryInfo
@@ -38,8 +38,7 @@ definitions:
       - predicateInfo
     additionalProperties: False
     properties:
-    ## now: this structure should lead to LESS querying 
-    ##      See logic keys in inputsAndQueryInfo/outputs
+    ## now: this structure should lead to LESS querying
       inputsAndQueryInfo:
         description: >-
           Object (Python dict-like). Describes input biomedical entities
@@ -53,25 +52,8 @@ definitions:
           semantic:
             description: Biolink class for the biomedical entities in the query
             type: string
-          ## FIRST STEP: include when you know (but this is new)
-          ## future: decide default behavior (OR?)
-          ##         curation to fully use this with idAndQuery
-          ##         BTE can use this to do FEWER queries
-          logic:
-            description: >-
-              Use when idAndQuery has >1 element, so biomedical entities may
-              have IDs that match multiple idAndQuery elements. For example,
-              an entity has MESH and OMIM IDs, and an API has idAndQuery
-              elements for both. BTE could query the API multiple times with
-              each ID it can handle (AND behavior) when different IDs retrieve
-              different info. Or BTE could query the API only ONCE with one of
-              the IDs it can handle (OR behavior) when different IDs retrieve
-              the same info (redundant)
-            type: string
-            enum:
-              - AND
-              - OR
-          idAndQuery: 
+          ## logic should be OR when there are multiple idAndQuery elements
+          idAndQuery:
             type: array
             minItems: 1
             items:
@@ -81,7 +63,7 @@ definitions:
                 - queryInfo
               additionalProperties: False
               properties:
-                id:  
+                id:
                   description: >-
                     Translator-compliant namespace prefix for the IDs of the
                     biomedical entities in the query
@@ -100,7 +82,7 @@ definitions:
                   items:
                     type: string
                 queryInfo:
-                  description: >- 
+                  description: >-
                     Contains info on the query (API call) for this operation.
                     OpenAPI /paths/operations may have specific fields (e.g.
                     parameters, responseBody), and these can be set here
@@ -116,17 +98,17 @@ definitions:
                       type: boolean
                     inputSeparator:
                       type: string
-                    path: 
+                    path:
                       type: string
                     method:
                       type: string
                     ## FIRST STEP: note prefix if this API query needs it
-                    ## future: processing notation in the input string? (like Django/Jinja)               
+                    ## future: processing notation in the input string? (like Django/Jinja)
                     parameters:
                       type: object
                     ## ?? a size parameter should always have a number value, rather than a string?
                     requestBody:
-                      type: object 
+                      type: object
       outputs:
         description: >-
           Object (Python dict-like). Describes output biomedical entities
@@ -142,22 +124,8 @@ definitions:
             description: >-
               Biolink class for the biomedical entities in the API response
             type: string
-          ## FIRST STEP: include when you know (but this is new)
-          ## future: decide default behavior (OR?)
-          ##         curation to fully use this with idAndQuery
-          ##         BTE can use this to do FEWER queries
-          logic:
-            description: >-
-              Use when idAndFields has >1 element. For example, an API returns
-              MGI (mouse) and Flybase (Drosophila) Gene IDs. BTE could expect
-              the different IDs in each result (AND behavior) and separate them
-              to make multiple associations. Or BTE could expect one ID in each
-              result (OR behavior) since each result represents one association
-            type: string
-            enum:
-              - AND
-              - OR
-          idAndFields: 
+          ## logic should be OR when there are multiple idAndQuery elements
+          idAndFields:
             type: array
             minItems: 1
             items:
@@ -169,56 +137,66 @@ definitions:
               ## FIRST STEP: using two response-field-mappings, one for ID and one for name
               ##   old x-bte was able to do this, so this has the option too
               properties:
-                id:  
+                id:
                   description: >-
                     Translator-compliant namespace prefix for the IDs of the
                     biomedical entities in the API response
                   type: string  ## usually all-caps
                 ## FIRST STEP: note if response fields have prefix/post-processing issues
                 ##             (string -> list, find/replace, etc.)
-                ## future: processing notation in the input string? (like Django/Jinja)               
-                idField:  
+                ## future: processing notation in the input string? (like Django/Jinja)
+                idField:
                   description: >-
                     Dot-notation of the API field that corresponds to the IDs
                     of the output biomedical entities
                   type: string
-                nameField:  
+                nameField:
                   description: >-
                     Dot-notation of the API field that corresponds to the names
                     of the output biomedical entities
-                  type: string 
-      ## NOT FOR FIRST STEP: testExample, requiresPreProcessing, apiHasDeduction. requires additional curation
-      ## still need to decide the format for testing...What if there are multiple IDs for input or output (the AND / OR)? 
-#       testExample:  ## this would be optional. Each set has ID for 1 input biomedical entity, and one expected output biomedical entity ID
-#         type: array
-#         minItems: 1
-#         items:
-#           type: object
-#           required:
-#             - qInput
-#             - oneOutput
-#           properties:
-#             qInput:
-#               type: string
-#             oneOutput:
-#               type: string
+                  type: string
+      testExample:
+        description: >-
+          Used for automated testing. Multiple elements when inputsAndQueryInfo or
+          outputs have multiple elements to test that it is handled correctly
+        type: array
+        minItems: 1
+        items:
+          type: object
+          required:
+            - qInput
+            - oneOutput
+          properties:
+            qInput:
+              description: >-
+                1 Translator-compliant curie for a biomedical entity, to use as input
+              type: string
+            oneOutput:
+              description: >-
+                1 Translator-compliant curie for a biomedical entity. This should be
+                in the response
+              type: string
+      ## NOT FOR FIRST STEP: requiresPreProcessing, apiHasDeduction. requires additional curation
       predicateInfo:
         type: object
         required:
           - biolink
         additionalProperties: False
-        properties: 
+        properties:
           biolink:
             oneOf:
               ## FIRST STEP: only use this sub-schema, like old x-bte. DON'T DO more curation
               ##             remember to use one predicate from Biolink related_to hierarchy
               ##             format undercase, underscores, no prefix
               - type: string
-          ## NOT FOR FIRST STEP: id (non-biolink predicate), label, negated. 
+              # future: can map to response field. expectedValues for metaKG,
+              #         responseField prefix/post-processing notation like Django/Jinja
+#               - $ref: '#/definitions/basicFromResponse'
+          ## NOT FOR FIRST STEP: id (non-biolink predicate), label, negated.
           ##   id, label have same structure as biolink.
           ## future: curation to add id for as many operations as possible?
       references:
-        description: >- 
+        description: >-
           Object (Python dict-like). Describes API fields that provide
           publications and webpages related to associations
         type: object
@@ -235,17 +213,22 @@ definitions:
             properties:
             ## FIRST STEP: note if response fields have prefix/post-processing issues
             ##             (string -> list, find/replace, etc.)
-            ## future: processing notation in the input string?? (like Django/Jinja)   
-              responseField: 
+            ## future: processing notation in the input string?? (like Django/Jinja)
+              responseField:
                 description: >-
                   Dot-notation of the API field
                 type: string
+        ## future: have a websiteTemplate property that uses processing notation (like Django/Jinja) to
+        ##         describe how to generate the KP-source's webpage for the association??
+#         properties:
+#           websiteTemplate:
+#             type: string
       provenances:
-      ## future: 
-      ## 1. discuss how to handle API fields that describe deeper source info. Maybe another property called fromKPSource (obj) -> names/methods keys that map to fields? 
+      ## future:
+      ## 1. discuss how to handle API fields that describe deeper source info. Maybe another property called fromKPSource (obj) -> names/methods keys that map to fields?
       ## 2. Are knowledgeProvider and kpSource info static? Or are they ever mapped to response?
       ##    The problem with direct mapping would be diff vocabs for methods, names between KPs
-        description: >- 
+        description: >-
           Object (Python dict-like). Provides structured source info
           for associations returned by the operation (AKA where and how
           they were made)
@@ -256,7 +239,7 @@ definitions:
           ## future: knowledgeProvider would include info about the API not in SmartAPI fields
           ## FIRST STEP: this is like old x-bte source field. DON'T DO more curation
           ## future: curation for other properties, require sourceType / method? perhaps this info is static?
-          kpSource: 
+          kpSource:
             description: >-
               Object (Python dict-like). Describes the source of data/knowledge
               that the knowledge provider used
@@ -270,7 +253,7 @@ definitions:
                 type: string
               ## Record what I'm doing in FileONames
           internalDataSource:
-          ## use for dynamic source info. Thinking each property below (name, method) would use basicFromResponse template 
+          ## use for dynamic source info. Thinking each property below (name, method) would use basicFromResponse template
           ## FIRST STEP: note if response fields have prefix/post-processing issues
           ##             (string -> list, find/replace, etc.)
           ## future: processing notation in the input string?? (like Django/Jinja)
@@ -287,17 +270,17 @@ definitions:
                   - responseField
                 additionalProperties: False
                 properties:
-                  responseField: 
+                  responseField:
                     description: Dot-notation of the API field
                     type: string
       contexts:  ## will be optional
-      ## currently using for dynamic context info. 
+      ## currently using for dynamic context info.
       ## FIRST STEP: note if response fields have prefix/post-processing issues
       ##             (string -> list, find/replace, etc.)
       ## future: processing notation in the input string?? (like Django/Jinja)
       ## note: hard to treat like references, since not all things (cohort, tissue, cell line) may have an ID/curie...
-      ## future: previously thought it would inherit from basicFromResponse. But there are decisions on whether there is only one field per key (context-type), whether to include ID namespace / semantic-type 
-        description: >- 
+      ## future: previously thought it would inherit from basicFromResponse. But there are decisions on whether there is only one field per key (context-type), whether to include ID namespace / semantic-type
+        description: >-
           Object (Python dict-like). Context is information that restricts the
           use or interpretation of this association. It helps one know if the
           operation or associations retrieved are relevant to the question
@@ -314,11 +297,11 @@ definitions:
               - responseField
             additionalProperties: False
             properties:
-              responseField: 
+              responseField:
                 description: Dot-notation of the API field
                 type: string
       numericMeasures:
-        description: >- 
+        description: >-
           Array of objects (Python list-of-dict-like). Describes API fields
           that provide a numeric value related to the association. Often from
           an analysis used to evaluate the association
@@ -329,30 +312,30 @@ definitions:
         ##             DON'T DO more curation
         ## future: curation for other properties, require directionMeanings?
           allOf:
-            - $ref: '#/definitions/generalMeasure'   
+            - $ref: '#/definitions/generalMeasure'
             ## includes additional properties for numeric measures
       categoricalMeasures:
       ## @ many fields treat this as a list of keywords, not a categorical
       ##   variable from stats (with only one value per record). So definition
-      ##   has been changed to accommodate this. 
+      ##   has been changed to accommodate this.
       ## @ Use singleValuesOnly flag to note stats categorical vars
-        description: >- 
+        description: >-
           Array of objects (Python list-of-dict-like). Describes API fields
           that do not fit into other properties (predicateInfo, provenances,
           contexts) and provide one or more keyword (string) values related to
-          the association 
+          the association
         type: array
         minItems: 1
         items:
         ## FIRST STEP: only include name and responseField (required by generalMeasure).
         ##             DON'T DO more curation
-        ## future: curation for other properties, 
+        ## future: curation for other properties,
         ##         require expectedValues? singleValuesOnly flag also important
           allOf:
-            - $ref: '#/definitions/generalMeasure'   
+            - $ref: '#/definitions/generalMeasure'
             ## includes additional properties for categorical measures
       otherProperties:
-      ## where to put everything else in old x-bte response mapping. 
+      ## where to put everything else in old x-bte response mapping.
       ## future: may include stuff like what was used to infer
       ##   associations via triangulation (e.g. variant for disease->gene),
       ##   text-mining info, clinical-data/exposures info
@@ -382,15 +365,15 @@ definitions:
                 Could have values like text_mining, gene_expression_data, etc.
               type: string
             ## future: responseField prefix/post-processing notation like Django/Jinja
-            responseField:  
+            responseField:
               description: >-
                 Dot-notation of the API field
-              type: string                                        
+              type: string
 ## this is 79 char long #######################################################
 ## for references from main oneAssociationRetrievalObj sub-schema
   ## assumes a measure's values are in one API field
   ## oneNumericMeasure and oneCategoricalMeasure build on generalMeasure
-  generalMeasure:  
+  generalMeasure:
     type: object
     required:
     - name
