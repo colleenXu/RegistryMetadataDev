@@ -155,7 +155,7 @@ definitions:
                     Dot-notation of the API field that corresponds to the names
                     of the output biomedical entities
                   type: string
-      testExample:
+      testExamples:
         description: >-
           Used for automated testing. Multiple elements when inputsAndQueryInfo or
           outputs have multiple elements to test that it is handled correctly

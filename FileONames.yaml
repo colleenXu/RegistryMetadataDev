@@ -19,7 +19,11 @@ DisGeNET  ## mydisease
 
 ## may want to change case/wording but fine
 DO  ## ontology lookup service (ols) api. change to Disease Ontology?
+
 CHEMBL  ## opentargets api
+chembl  ## mygene's treats2, treatedby2 operations
+
+
 dbsnp  ## myvariant.info, litvar
 clinvar   ## myvariant.info
 civic  ## myvariant.info
