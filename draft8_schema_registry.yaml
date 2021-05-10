@@ -3,28 +3,33 @@ $schema: 'http://json-schema.org/draft-07/schema#'
 type: object
 description: >-
   Describes the x-bte-association-retrieval metadata extension within SmartAPI
-  registry files. Knowledge-provider (KP) APIs in the Translator ecosystem
+  registry files. This extension is added to the annotation for API endpoints.
+  Knowledge-provider (KP) APIs in the Translator ecosystem
   provide associations/edges between biomedical entities. This extension
   includes 1) additional support for querying those APIs, 2) metadata for
   processing API responses, and 3) metadata to add information to the API
   responses
 required:
-  - components
+  - paths
 properties:
-  components:
+  ## x-bte annotations go within the SmartAPI annotation for an endpoint
+  paths:
     type: object
-    properties:
-      x-bte-association-retrieval:
-        definition: >-
-          Each key inside this object corresponds to one association-retrieval
-          operation. An operation has input biomedical entities from one
-          Biolink class, output biomedical entities from one Biolink entity
-          class, and one unique set of metadata
+    minProperties: 1
+    patternProperties:
+      .:   ## this is the path to the endpoint from the base server url
         type: object
         minProperties: 1
         patternProperties:
-          .:  ## usually named inputType-outputType-number
-            $ref: '#/definitions/oneAssociationRetrievalObj'
+          "^get$|^post$":  ## the endpoints for association-retrieval tend to be get or post types
+            type: object
+            ## having the x-bte extension is optional (we only put it on some endpoints)
+            properties:
+              x-bte-association-retrieval:
+                type: array
+                minItems: 1
+                items: ## usually named inputType-outputType-number
+                  $ref: '#/definitions/oneAssociationRetrievalObj'
 definitions:
   oneAssociationRetrievalObj:
     type: object
