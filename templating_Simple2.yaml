@@ -1,0 +1,671 @@
+--- 
+components: 
+  parameters: 
+    callback: 
+      description: "you can pass a \"callback\" parameter to make a JSONP call."
+      in: query
+      name: callback
+      schema: 
+        type: string
+    dotfield: 
+      description: "control the format of the returned fields when passed \"fields\" parameter contains dot notation, e.g. \"fields=refseq.rna\". If \"True\" or \"1\", the returned data object contains a single \"refseq.rna\" field, otherwise (\"False\" or \"0\"), a single \"refseq\" field with a sub-field of \"rna\". Default: True."
+      in: query
+      name: dotfield
+      schema: 
+        type: boolean
+    email: 
+      description: "If you are regular users of our services, we encourage you to provide us an email, so that we can better track the usage or follow up with you."
+      in: query
+      name: email
+      schema: 
+        type: string
+    fields: 
+      description: "a comma-separated fields to limit the fields returned from the matching gene hits. The supported field names can be found from any gene object (e.g. http://mygene.info/v3/gene/1017). Note that it supports dot notation as well, e.g., you can pass \"refseq.rna\". If \"fields=all\", all available fields will be returned. Default: \"symbol,name,taxid,entrezgene,ensemblgene\"."
+      in: query
+      name: fields
+      schema: 
+        type: string
+    from: 
+      description: "the number of matching gene hits to skip, starting from 0. Combining with \"size\" parameter, this can be useful for paging. Default: 0."
+      in: query
+      name: from
+      schema: 
+        type: integer
+    size: 
+      description: "the maximum number of matching gene hits to return (with a cap of 1000 at the moment). Default: 10."
+      in: query
+      name: size
+      schema: 
+        type: integer
+    sort: 
+      description: "the comma-separated fields to sort on. Prefix with \"-\" for descending order, otherwise in ascending order. Default: sort by matching scores in decending order."
+      in: query
+      name: sort
+      schema: 
+        type: string
+    species: 
+      description: "can be used to limit the gene hits from given species. You can use \"common names\" for nine common species (human, mouse, rat, fruitfly, nematode, zebrafish, thale-cress, frog and pig). All other species, you can provide their taxonomy ids. Multiple species can be passed using comma as a separator. Default: human,mouse,rat."
+      in: query
+      name: species
+      schema: 
+        type: string
+  schemas: 
+    Gene: 
+      properties: 
+        AnimalQTLdb: 
+          type: string
+        FLYBASE: 
+          type: string
+        HGNC: 
+          type: string
+        HPRD: 
+          type: string
+        MGI: 
+          type: string
+        MIM: 
+          type: string
+        RATMAP: 
+          type: string
+        RGD: 
+          type: string
+        TAIR: 
+          type: string
+        Vega: 
+          type: string
+        WormBase: 
+          type: string
+        Xenbase: 
+          type: string
+        ZFIN: 
+          type: string
+        _id: 
+          type: string
+        accession: 
+          type: object
+        aliase: 
+          type: string
+        ec: 
+          type: string
+        ensembl: 
+          type: object
+        entrezgene: 
+          format: int64
+          type: integer
+        generif: 
+          properties: 
+            pubmed: 
+              $ref: "#/components/schemas/int64_or_array"
+            text: 
+              type: string
+          type: object
+        genomic_pos: 
+          type: object
+        go: 
+          type: object
+        homologene: 
+          type: object
+        interpro: 
+          type: object
+        locus_tag: 
+          type: string
+        map_location: 
+          type: string
+        miRBase: 
+          type: string
+        name: 
+          type: string
+        other_names: 
+          $ref: "#/components/schemas/string_or_array"
+        pathway: 
+          type: object
+        pdb: 
+          $ref: "#/components/schemas/string_or_array"
+        pfam: 
+          type: string
+        pharmgkb: 
+          type: string
+        pid: 
+          type: string
+        pir: 
+          type: string
+        prosite: 
+          type: string
+        reagent: 
+          type: object
+        refseq: 
+          type: object
+        reporter: 
+          type: object
+        summary: 
+          type: string
+        symbol: 
+          type: string
+        taxid: 
+          format: int32
+          type: integer
+        type_of_gene: 
+          type: string
+        umls: 
+          type: object
+        unigene: 
+          type: string
+        uniprot: 
+          properties: 
+            Swiss-Prot: 
+              $ref: "#/components/schemas/string_or_array"
+            TrEMBL: 
+              $ref: "#/components/schemas/string_or_array"
+          type: object
+        wikipedia: 
+          properties: 
+            url_stub: 
+              type: string
+          type: object
+      required: 
+        - _id
+        - taxid
+      type: object
+    MinimalGene: 
+      properties: 
+        _id: 
+          type: string
+        entrezgene: 
+          format: int64
+          type: integer
+        name: 
+          type: string
+        symbol: 
+          type: string
+        taxid: 
+          format: int32
+          type: integer
+      required: 
+        - _id
+        - taxid
+      type: object
+    QueryPOSTResult: 
+      items: 
+        allOf: 
+          - 
+            $ref: "#/components/schemas/MinimalGene"
+          - 
+            properties: 
+              _score: 
+                format: float
+                type: number
+              query: 
+                type: string
+            type: object
+      type: array
+    QueryResult: 
+      properties: 
+        hits: 
+          items: 
+            $ref: "#/components/schemas/Gene"
+          type: array
+        max_score: 
+          format: float
+          type: number
+        took: 
+          type: integer
+        total: 
+          type: integer
+      type: object
+    int64_or_array: 
+      type: integer
+    string_or_array: 
+      type: string
+  x-bte-kgs-operations: 
+    hasHomolog-rev-templated:   ## this operation currently doesn't work. Maybe templating will help
+      - 
+        supportBatch: true
+        useTemplating: true
+        inputs: 
+          - 
+            id: MGI
+            semantic: Gene
+        requestBody: 
+          body: 
+            q: "{{ {inputs[0]} | rmPrefix | join(',') }}"
+            ## example: put in 1916384
+            ##   should get 643161 back (FAM25A)
+            scopes: pantherdb.ortholog.MGI
+          header: application/x-www-form-urlencoded
+        outputs:
+          - 
+            id: NCBIGene
+            semantic: Gene
+        parameters: 
+          fields: entrezgene
+        predicate: homologous_to
+        response_mapping: 
+          $ref: "#/components/x-bte-response-mapping/entrezgene"
+        source: "infores:panther"
+#     Testing process suggestions: test with multiple IDs as input + 1 ID as input
+#     - Post to MyGene-thru-BTE specifically: 
+#       http://localhost:3000/v1/smartapi/59dce17363dce279d389100834e43648/query
+#     - Multiple IDs: A query like this one:
+# {
+#     "message": {
+#         "query_graph": {
+#             "nodes": {
+#                 "n0": {
+#                     "ids":["MGI:1916384", "MGI:2443864"],
+#                     "categories":["biolink:Gene"]
+#                 },
+#                 "n1": {
+#                     "categories":["biolink:Gene"]
+#                }
+#             },
+#             "edges": {
+#                 "e1": {
+#                     "subject": "n0",
+#                     "object": "n1"
+#                 }
+#             }
+#         }
+#     }
+# }
+#       The response logs should have a sub-query like this, and should have a populated knowledge_graph/results...
+#       - Notice how the format was correctly generated to send the multiple IDs in 1 query
+        # {
+        #     "timestamp": "2021-09-09T23:00:48.793Z",
+        #     "level": "DEBUG",
+        #     "message": "call-apis: Succesfully made the following query: {\"url\":\"https://mygene.info/v3/query\",\"params\":{\"fields\":\"entrezgene\"},\"data\":\"q=1916384,2443864&scopes=pantherdb.ortholog.MGI\",\"method\":\"post\",\"timeout\":50000}",
+        #     "code": null
+        # },
+    # ## old version of operation
+    # hasHomolog-rev: 
+    #   - 
+    #     inputSeparator: ","
+    #     inputs: 
+    #       - 
+    #         id: MGI
+    #         semantic: Gene
+    #     outputs:
+    #       - 
+    #         id: NCBIGene
+    #         semantic: Gene
+    #     parameters: 
+    #       fields: entrezgene
+    #     predicate: homologous_to
+    #     requestBody: 
+    #       body: 
+    #         q: "{inputs[0]}"
+    #         scopes: pantherdb.ortholog.MGI
+    #       header: application/x-www-form-urlencoded
+    #     response_mapping: 
+    #       $ref: "#/components/x-bte-response-mapping/entrezgene"
+    #     source: "infores:panther"
+    #     supportBatch: true
+    MFToGene-templated:
+      - 
+        supportBatch: true
+        useTemplating: true
+        inputs: 
+          - 
+            id: GO
+            semantic: MolecularActivity
+        requestBody: 
+          body: 
+            q: "{inputs[0]}  | join(',') "   ## BTE currently automatically adds the prefix (GO:)
+            scopes: go.MF.id
+            size: 1000  ## note size limit
+          header: application/x-www-form-urlencoded
+        outputs: 
+          - 
+            id: NCBIGene
+            semantic: Gene
+        parameters: 
+          fields: entrezgene
+          species: human
+        predicate: enabled_by
+        response_mapping: 
+          $ref: "#/components/x-bte-response-mapping/entrezgene"
+        source: "infores:ncbi-gene"
+#     Testing process suggestions: test with multiple IDs as input + 1 ID as input
+#     - Post to MyGene-thru-BTE specifically: 
+#       http://localhost:3000/v1/smartapi/59dce17363dce279d389100834e43648/query
+#     - Multiple IDs: A query like this one:
+# {
+#     "message": {
+#         "query_graph": {
+#             "nodes": {
+#                 "n0": {
+#                     "ids":["GO:0008147", "GO:0005549"],
+#                     "categories":["biolink:MolecularActivity"]
+#                 },
+#                 "n1": {
+#                     "categories":["biolink:Gene"]
+#                }
+#             },
+#             "edges": {
+#                 "e1": {
+#                     "subject": "n0",
+#                     "object": "n1"
+#                 }
+#             }
+#         }
+#     }
+# }
+#       The response logs show that this was the sub-query sent to MyGene.info:
+#       - Notice that more UMLS IDs were found after ID resolution
+#       - Notice how the format was correctly generated to send the multiple IDs in 1 query
+        # {
+        #     "timestamp": "2021-09-09T22:49:11.082Z",
+        #     "level": "DEBUG",
+        #     "message": "call-apis: Succesfully made the following query: {\"url\":\"https://mygene.info/v3/query\",\"params\":{\"fields\":\"entrezgene\",\"species\":\"human\"},\"data\":\"q=GO:0008147,GO:0005549&scopes=go.MF.id&size=1000\",\"method\":\"post\",\"timeout\":50000}",
+        #     "code": null
+        # },
+#     - 1 ID: A query like this one:
+# {
+#     "message": {
+#         "query_graph": {
+#             "nodes": {
+#                 "n0": {
+#                     "ids":["GO:0008147"],
+#                     "categories":["biolink:MolecularActivity"]
+#                 },
+#                 "n1": {
+#                     "categories":["biolink:Gene"]
+#                }
+#             },
+#             "edges": {
+#                 "e1": {
+#                     "subject": "n0",
+#                     "object": "n1"
+#                 }
+#             }
+#         }
+#     }
+# }
+#       The response logs show that this was the sub-query sent to MyGene.info:
+        # {
+        #     "timestamp": "2021-09-09T22:50:37.947Z",
+        #     "level": "DEBUG",
+        #     "message": "call-apis: Succesfully made the following query: {\"url\":\"https://mygene.info/v3/query\",\"params\":{\"fields\":\"entrezgene\",\"species\":\"human\"},\"data\":\"q=GO:0008147&scopes=go.MF.id&size=1000\",\"method\":\"post\",\"timeout\":50000}",
+        #     "code": null
+        # },
+    # ## old version of the operation
+    # MFToGene:
+    # ## biolink: weird predicate. biolink doesn't have something like activity_of/function_of 
+    # ## future: relation could be RO:0000079 (function_of), but this currently isn't mapped to biolink
+    #   - 
+    #     inputSeparator: ","
+    #     inputs: 
+    #       - 
+    #         id: GO
+    #         semantic: MolecularActivity
+    #     outputs: 
+    #       - 
+    #         id: NCBIGene
+    #         semantic: Gene
+    #     parameters: 
+    #       ## all records with go.MF field also have entrezgene field
+    #       fields: entrezgene
+    #       species: human
+    #     predicate: enabled_by
+    #     requestBody: 
+    #       body: 
+    #         q: "{inputs[0]}"   ## HAS PREFIX (GO)
+    #         ## example: put GO:0008147 here (structural constituent of bone)
+    #         ##   should get 632 (BGLAP) in response
+    #         scopes: go.MF.id
+    #         size: 1000  ## note size limit
+    #       header: application/x-www-form-urlencoded
+    #     response_mapping: 
+    #       $ref: "#/components/x-bte-response-mapping/entrezgene"
+    #     source: "infores:ncbi-gene"   ## which got from GO Annotations...
+    #     supportBatch: true
+  x-bte-response-mapping: 
+    entrezgene: 
+      NCBIGene: entrezgene   ## no prefix
+info: 
+  contact: 
+    email: help@mygene.info
+    name: "Chunlei Wu"
+    x-id: "https://github.com/newgene"
+    x-role: "responsible developer"
+  description: "Documentation of the MyGene.info Gene Query web services. Learn more about [MyGene.info](http://mygene.info/)"
+  termsOfService: "http://mygene.info/terms/"
+  title: "MyGene.info API"
+  version: "3.0"
+  x-translator: 
+    infores-curie: "infores:mygene-info"
+    component: KP
+    team: 
+      - "Service Provider"
+    biolink-version: "2.2.3"
+openapi: "3.0.0"
+paths: 
+  /gene: 
+    post: 
+      parameters: 
+        - 
+          $ref: "#/components/parameters/fields"
+          name: fields
+        - 
+          $ref: "#/components/parameters/species"
+          name: species
+        - 
+          $ref: "#/components/parameters/dotfield"
+          name: dotfield
+        - 
+          $ref: "#/components/parameters/email"
+          name: email
+      requestBody: 
+        content: 
+          application/x-www-form-urlencoded: 
+            schema: 
+              properties: 
+                ids: 
+                  description: "multiple geneids seperated by comma, e.g., \"ids=1017,1018\" or \"ids=695,ENSG00000123374\". Note that currently we only take the input ids up to 1000 maximum, the rest will be omitted."
+                  type: string
+              required: 
+                - ids
+      responses: 
+        "200": 
+          content: 
+            application/json: 
+              schema: 
+                items: 
+                  $ref: "#/components/schemas/Gene"
+                type: array
+          description: "a list of matching gene objects"
+      summary: "For a list of gene ids, return the matching gene objects"
+      tags: 
+        - annotation
+  "/gene/{geneid}": 
+    get: 
+      parameters: 
+        - 
+          description: "Entrez or Ensembl gene id, e.g., 1017, ENSG00000170248. A retired Entrez Gene id works too if it is replaced by a new one, e.g., 245794"
+          example: "1017"
+          in: path
+          name: geneid
+          required: true
+          schema: 
+            type: string
+        - 
+          $ref: "#/components/parameters/fields"
+          name: fields
+        - 
+          $ref: "#/components/parameters/dotfield"
+          name: dotfield
+        - 
+          $ref: "#/components/parameters/callback"
+          name: callback
+        - 
+          $ref: "#/components/parameters/email"
+          name: email
+      responses: 
+        "200": 
+          content: 
+            application/json: 
+              schema: 
+                $ref: "#/components/schemas/Gene"
+          description: "A matching gene object"
+      summary: "Retrieve gene annotation object based on Entrez or Ensembl gene id, support JSONP and CORS as well."
+      tags: 
+        - annotation
+  /metadata: 
+    get: 
+      parameters: 
+        - 
+          $ref: "#/components/parameters/callback"
+          name: callback
+      responses: 
+        "200": 
+          description: "MyGene.info metadata object"
+      summary: "Get metadata about the data available from MyGene.info."
+  /metadata/fields: 
+    get: 
+      parameters: 
+        - 
+          description: "Pass a search term to filter the available fields, e.g. \"search=clinvar\"."
+          in: query
+          name: search
+          schema: 
+            type: string
+        - 
+          description: "Pass a prefix string to filter the available fields, e.g. \"prefix=refseq\"."
+          in: query
+          name: prefix
+          schema: 
+            type: string
+        - 
+          $ref: "#/components/parameters/callback"
+          name: callback
+      responses: 
+        "200": 
+          description: "MyGene.info metadata fields object"
+      summary: "Get metadata about the data fields available from MyGene.info."
+  /query: 
+    get: 
+      parameters: 
+        - 
+          description: "Query string. Examples \"CDK2\", \"NM_052827\", \"204639_at\", \"chr1:151,073,054-151,383,976\", \"hg19.chr1:151073054-151383976\". The detailed query syntax can be found from our [docs](http://docs.mygene.info/en/latest/doc/query_service.html)."
+          example: CDK2
+          in: query
+          name: q
+          required: true
+          schema: 
+            type: string
+        - 
+          $ref: "#/components/parameters/fields"
+          name: fields
+        - 
+          $ref: "#/components/parameters/species"
+          name: species
+        - 
+          $ref: "#/components/parameters/size"
+          name: size
+        - 
+          $ref: "#/components/parameters/from"
+          name: from
+        - 
+          $ref: "#/components/parameters/sort"
+          name: sort
+        - 
+          description: "a single field or comma-separated fields to return facets, for example, \"facets=taxid\", \"facets=taxid,type_of_gene\"."
+          in: query
+          name: facets
+          schema: 
+            type: string
+        - 
+          description: "relevant when faceting on species (i.e., “facets=taxid” are passed). It’s used to pass species filter without changing the scope of faceting, so that the returned facet counts won’t change. Either species name or taxonomy id can be used, just like “species” parameter."
+          in: query
+          name: species_facet_filter
+          schema: 
+            type: string
+        - 
+          description: "when passed as “True” or “1”, the query returns only the hits with valid Entrez gene ids. Default: False."
+          in: query
+          name: entrezonly
+          schema: 
+            type: boolean
+        - 
+          description: "when passed as “True” or “1”, the query returns only the hits with valid Ensembl gene ids. Default: False."
+          in: query
+          name: ensemblonly
+          schema: 
+            type: boolean
+        - 
+          $ref: "#/components/parameters/callback"
+          name: callback
+        - 
+          $ref: "#/components/parameters/dotfield"
+          name: dotfield
+        - 
+          $ref: "#/components/parameters/email"
+          name: email
+      responses: 
+        "200": 
+          content: 
+            application/json: 
+              schema: 
+                $ref: "#/components/schemas/QueryResult"
+          description: "A query response object with \"hits\" property"
+      summary: "Make gene query and return matching gene list. Support JSONP and CORS as well."
+      tags: 
+        - query
+    post: 
+      parameters: 
+        - 
+          $ref: "#/components/parameters/fields"
+          name: fields
+        - 
+          $ref: "#/components/parameters/species"
+          name: species
+        - 
+          $ref: "#/components/parameters/dotfield"
+          name: dotfield
+        - 
+          $ref: "#/components/parameters/email"
+          name: email
+      requestBody: 
+        content: 
+          application/x-www-form-urlencoded: 
+            schema: 
+              properties: 
+                q: 
+                  description: "multiple query terms seperated by comma (also support \"+\" or white space), but no wildcard, e.g., \"q=1017,1018\" or \"q=CDK2+BTK\""
+                  type: string
+                scopes: 
+                  description: "Specify one or more fields (separated by comma) as the search \"scopes\", e.g., \"scopes=entrezgene\", \"scopes=entrezgene,ensemblgene\". The available \"fields\" can be passed to \"scopes\" parameter are listed [here](http://mygene.info/doc/query_service.html#available-fields). Default: \"scopes=entrezgene,ensemblgene,retired\" (either Entrez or Ensembl gene ids)."
+                  type: string
+              required: 
+                - q
+      responses: 
+        "200": 
+          content: 
+            application/json: 
+              schema: 
+                $ref: "#/components/schemas/QueryPOSTResult"
+          description: "Query response objects with \"hits\" property"
+      summary: "Make gene batch query and return matching gene hits"
+      tags: 
+        - query
+      x-bte-kgs-operations: 
+        - 
+          $ref: "#/components/x-bte-kgs-operations/MFToGene-templated"        
+        - 
+          $ref: "#/components/x-bte-kgs-operations/hasHomolog-rev-templated"
+servers: 
+  - 
+    description: "Encrypted Production server"
+    url: "https://mygene.info/v3"
+  - 
+    description: "Production server"
+    url: "http://mygene.info/v3"
+tags: 
+  - 
+    name: gene
+  - 
+    name: annotation
+  - 
+    name: query
+  - 
+    name: translator
+  - 
+    name: biothings
