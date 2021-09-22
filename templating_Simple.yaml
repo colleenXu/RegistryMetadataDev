@@ -387,27 +387,29 @@ components:
       disgenet-score: disgenet.genes_related_to_disease.score
   x-bte-kgs-operations:
     disease-gene-templated:
-    - supportBatch: true  
-      ## is this flag used? may be useful to keep since some APIs can't accept multiple IDs and others can...
-      useTemplating: true  ## flag to say templating is being used below
-      inputs:
-      - id: UMLS
-        semantic: Disease
-      requestBody:
-        body:
-          ## inputs will likely not have prefix to remove...
-          q: "{{ {inputs[0]} | rmPrefix | join(',') }}" 
-          scopes: disgenet.xrefs.umls
-        header: application/x-www-form-urlencoded
-      parameters:
-        fields: disgenet.genes_related_to_disease
-      outputs:
-      - id: NCBIGene
-        semantic: Gene
-      predicate: related_to
-      source: "infores:disgenet"
-      response_mapping:
-        "$ref": "#/components/x-bte-response-mapping/disease-gene"
+      - supportBatch: true
+        ## is this flag used? may be useful to keep since some APIs can't accept multiple IDs and others can...
+        useTemplating: true ## flag to say templating is being used below
+        inputSeparator: ","
+        inputs:
+          - id: UMLS
+            semantic: Disease
+        requestBody:
+          body:
+            ## inputs will likely not have prefix to remove...
+            q: "{{ queryInputs | rmPrefix | joinSafe(',') }}"
+            # q: "{inputs[0]}"
+            scopes: disgenet.xrefs.umls
+          header: application/x-www-form-urlencoded
+        parameters:
+          fields: disgenet.genes_related_to_disease
+        outputs:
+          - id: NCBIGene
+            semantic: Gene
+        predicate: related_to
+        source: "infores:disgenet"
+        response_mapping:
+          "$ref": "#/components/x-bte-response-mapping/disease-gene"
 #     Testing process suggestions: test with multiple IDs as input + 1 ID as input
 #     - Post to MyDisease-thru-BTE specifically: 
 #       http://localhost:3000/v1/smartapi/671b45c0301c8624abbd26ae78449ca2/query
