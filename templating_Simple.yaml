@@ -390,7 +390,6 @@ components:
       - supportBatch: true
         ## is this flag used? may be useful to keep since some APIs can't accept multiple IDs and others can...
         useTemplating: true ## flag to say templating is being used below
-        inputSeparator: ","
         inputs:
           - id: UMLS
             semantic: Disease
